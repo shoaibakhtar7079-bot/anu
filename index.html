@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>अनु</title>
+<style>
+  body { font-family: sans-serif; background: #111; color: #fff; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+  h1 { text-align: center; margin: 12px 0 0; }
+  #chat { flex: 1; overflow-y: auto; padding: 12px; }
+  .me { text-align: right; color: #8ab4ff; margin: 8px 0; }
+  .anu { text-align: left; color: #ffd28a; margin: 8px 0; }
+  #btn { margin: 12px; padding: 18px; font-size: 20px; border: none; border-radius: 14px; background: #e91e63; color: #fff; }
+  #bhool { margin: 0 12px 12px; padding: 8px; font-size: 14px; border: none; border-radius: 10px; background: #333; color: #aaa; }
+</style>
+</head>
+<body>
+<h1>अनु</h1>
+<div id="chat"></div>
+<button id="btn">बोलिए</button>
+<button id="bhool">सारी याददाश्त मिटाओ</button>
+
+<script>
+// ====== यहाँ अपनी चीज़ें भरें ======
+const GROQ_KEY = "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";
+const ELEVEN_KEY = "sk_21f5ca2d26a24dbcf3d35471736a1b38b12d53fb4f2c66c4";
+const VOICE_ID = "broqrJkktxd1CclKTudW";
+const NAAM = "अनु";
+// ====================================
+
+const chat = document.getElementById("chat");
+const btn = document.getElementById("btn");
+
+// ---- याददाश्त ----
+let yaadein = JSON.parse(localStorage.getItem("anu_yaadein") || "[]");
+let history = JSON.parse(localStorage.getItem("anu_history") || "[]");
+
+function saveSab() {
+  localStorage.setItem("anu_yaadein", JSON.stringify(yaadein));
+  localStorage.setItem("anu_history", JSON.stringify(history.slice(-30)));
+}
+
+function systemMsg() {
+  let s = "तुम " + NAAM + " हो, शोएब की दोस्त और पर्सनल असिस्टेंट। दोस्त की तरह अपनेपन से बात करो। हमेशा हिंदी में, छोटे और सीधे जवाब दो, ज़्यादा से ज़्यादा दो वाक्य।";
+  if (yaadein.length > 0) {
+    s += "\n\nशोएब के बारे में तुम्हें ये बातें याद हैं:\n- " + yaadein.join("\n- ");
+    s += "\nइन्हें ज़रूरत पड़ने पर स्वाभाविक रूप से इस्तेमाल करो।";
+  }
+  return { role: "system", content: s };
+}
+
+function add(cls, text) {
+  const d = document.createElement("div");
+  d.className = cls; d.textContent = text;
+  chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+}
+
+history.forEach(m => { if (m.role === "user") add("me", m.content); else if (m.role === "assistant") add("anu", m.content); });
+
+async function groq(messages, maxTokens) {
+  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Authorization": "Bearer " + GROQ_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: messages, max_tokens: maxTokens })
+  });
+  const j = await r.json();
+  return j.choices[0].message.content;
+}
+
+async function socho(text) {
+  history.push({ role: "user", content: text });
+  const jawab = await groq([systemMsg()].concat(history.slice(-20)), 150);
+  history.push({ role: "assistant", content: jawab });
+  saveSab();
+  return jawab;
+}
+
+// बातचीत के बाद पीछे से ख़ास बातें निकालकर याद रखना
+async function yaadKaro(suna, jawab) {
+  try {
+    const p = "नीचे शोएब और अनु की बातचीत है। अगर शोएब ने अपने बारे में कोई नई ख़ास बात बताई है, जैसे नाम, पसंद, नापसंद, दोस्त, परिवार, काम, योजना या आदत, तो उसे एक छोटे हिंदी वाक्य में लिखो। एक से ज़्यादा हों तो हर एक नई लाइन में। अगर कुछ भी नया नहीं है, तो सिर्फ़ NONE लिखो।\n\nशोएब: " + suna + "\nअनु: " + jawab;
+    const out = await groq([{ role: "user", content: p }], 100);
+    if (out.trim().toUpperCase().startsWith("NONE")) return;
+    out.split("\n").map(x => x.replace(/^[-•\s]+/, "").trim()).filter(x => x.length > 3).forEach(x => {
+      if (!yaadein.includes(x)) yaadein.push(x);
+    });
+    yaadein = yaadein.slice(-60);
+    saveSab();
+  } catch (e) {}
+}
+
+async function bolo(text) {
+  const r = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" + VOICE_ID + "?output_format=mp3_44100_64", {
+    method: "POST",
+    headers: { "xi-api-key": ELEVEN_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ text: text, model_id: "eleven_flash_v2_5" })
+  });
+  const blob = await r.blob();
+  const audio = new Audio(URL.createObjectURL(blob));
+  await audio.play();
+}
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const rec = new SR();
+rec.lang = "hi-IN";
+rec.onresult = async (e) => {
+  const suna = e.results[0][0].transcript;
+  add("me", suna);
+  btn.textContent = "सोच रही हूँ...";
+  try {
+    const jawab = await socho(suna);
+    add("anu", jawab);
+    bolo(jawab);
+    yaadKaro(suna, jawab);
+  } catch (err) { add("anu", "कुछ गड़बड़ हो गई: " + err); }
+  btn.textContent = "बोलिए";
+};
+rec.onerror = () => { btn.textContent = "बोलिए"; };
+btn.onclick = () => { btn.textContent = "सुन रही हूँ..."; rec.start(); };
+
+document.getElementById("bhool").onclick = () => {
+  if (confirm("अनु की सारी याददाश्त मिटा दूँ?")) {
+    localStorage.removeItem("anu_yaadein"); localStorage.removeItem("anu_history");
+    yaadein = []; history = []; chat.innerHTML = "";
+  }
+};
+</script>
+</body>
+</html>
