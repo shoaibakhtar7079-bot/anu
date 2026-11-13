@@ -7,29 +7,64 @@
 <style>
   body { font-family: sans-serif; background: #111; color: #fff; margin: 0; display: flex; flex-direction: column; height: 100vh; }
   h1 { text-align: center; margin: 12px 0 0; }
+  #setup { padding: 16px; }
+  #setup input { display: block; width: 100%; box-sizing: border-box; margin: 8px 0; padding: 12px; font-size: 16px; border-radius: 8px; border: none; }
+  #setup button { padding: 14px; width: 100%; font-size: 18px; border: none; border-radius: 10px; background: #e91e63; color: #fff; }
+  #main { display: none; flex: 1; flex-direction: column; min-height: 0; }
   #chat { flex: 1; overflow-y: auto; padding: 12px; }
   .me { text-align: right; color: #8ab4ff; margin: 8px 0; }
   .anu { text-align: left; color: #ffd28a; margin: 8px 0; }
   #btn { margin: 12px; padding: 18px; font-size: 20px; border: none; border-radius: 14px; background: #e91e63; color: #fff; }
-  #bhool { margin: 0 12px 12px; padding: 8px; font-size: 14px; border: none; border-radius: 10px; background: #333; color: #aaa; }
+  .chhota { margin: 0 12px 12px; padding: 8px; font-size: 14px; border: none; border-radius: 10px; background: #333; color: #aaa; }
 </style>
 </head>
 <body>
 <h1>अनु</h1>
-<div id="chat"></div>
-<button id="btn">बोलिए</button>
-<button id="bhool">सारी याददाश्त मिटाओ</button>
+
+<div id="setup">
+  <p>पहली बार की सेटिंग: अपनी चाबियाँ यहाँ डालिए। ये सिर्फ़ इसी फ़ोन या ब्राउज़र में सेव होंगी।</p>
+  <input id="k1" placeholder="Groq की चाबी">
+  <input id="k2" placeholder="ElevenLabs की चाबी">
+  <input id="k3" placeholder="आवाज़ की ID (Voice ID)">
+  <button id="save">सेव करो</button>
+</div>
+
+<div id="main">
+  <div id="chat"></div>
+  <button id="btn">बोलिए</button>
+  <button class="chhota" id="bhool">सारी याददाश्त मिटाओ</button>
+  <button class="chhota" id="chabi">चाबियाँ बदलो</button>
+</div>
 
 <script>
-// ====== यहाँ अपनी चीज़ें भरें ======
-const GROQ_KEY = "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";
-const ELEVEN_KEY = "sk_21f5ca2d26a24dbcf3d35471736a1b38b12d53fb4f2c66c4";
-const VOICE_ID = "broqrJkktxd1CclKTudW";
 const NAAM = "अनु";
-// ====================================
+let GROQ_KEY = localStorage.getItem("anu_k1") || "";
+let ELEVEN_KEY = localStorage.getItem("anu_k2") || "";
+let VOICE_ID = localStorage.getItem("anu_k3") || "";
 
+const setup = document.getElementById("setup");
+const main = document.getElementById("main");
 const chat = document.getElementById("chat");
 const btn = document.getElementById("btn");
+
+function dikhao() {
+  if (GROQ_KEY && ELEVEN_KEY && VOICE_ID) { setup.style.display = "none"; main.style.display = "flex"; }
+  else { setup.style.display = "block"; main.style.display = "none"; }
+}
+document.getElementById("save").onclick = () => {
+  GROQ_KEY = document.getElementById("k1").value.trim();
+  ELEVEN_KEY = document.getElementById("k2").value.trim();
+  VOICE_ID = document.getElementById("k3").value.trim();
+  localStorage.setItem("anu_k1", GROQ_KEY);
+  localStorage.setItem("anu_k2", ELEVEN_KEY);
+  localStorage.setItem("anu_k3", VOICE_ID);
+  dikhao();
+};
+document.getElementById("chabi").onclick = () => {
+  localStorage.removeItem("anu_k1"); localStorage.removeItem("anu_k2"); localStorage.removeItem("anu_k3");
+  GROQ_KEY = ""; ELEVEN_KEY = ""; VOICE_ID = ""; dikhao();
+};
+dikhao();
 
 // ---- याददाश्त ----
 let yaadein = JSON.parse(localStorage.getItem("anu_yaadein") || "[]");
@@ -75,7 +110,6 @@ async function socho(text) {
   return jawab;
 }
 
-// बातचीत के बाद पीछे से ख़ास बातें निकालकर याद रखना
 async function yaadKaro(suna, jawab) {
   try {
     const p = "नीचे शोएब और अनु की बातचीत है। अगर शोएब ने अपने बारे में कोई नई ख़ास बात बताई है, जैसे नाम, पसंद, नापसंद, दोस्त, परिवार, काम, योजना या आदत, तो उसे एक छोटे हिंदी वाक्य में लिखो। एक से ज़्यादा हों तो हर एक नई लाइन में। अगर कुछ भी नया नहीं है, तो सिर्फ़ NONE लिखो।\n\nशोएब: " + suna + "\nअनु: " + jawab;
