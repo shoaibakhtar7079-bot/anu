@@ -14,6 +14,7 @@
   #chat { flex: 1; overflow-y: auto; padding: 12px; }
   .me { text-align: right; color: #8ab4ff; margin: 8px 0; }
   .anu { text-align: left; color: #ffd28a; margin: 8px 0; }
+  .err { text-align: left; color: #ff7b7b; margin: 8px 0; font-size: 14px; }
   #btn { margin: 12px; padding: 18px; font-size: 20px; border: none; border-radius: 14px; background: #e91e63; color: #fff; }
   .chhota { margin: 0 12px 12px; padding: 8px; font-size: 14px; border: none; border-radius: 10px; background: #333; color: #aaa; }
 </style>
@@ -23,7 +24,7 @@
 
 <div id="setup">
   <p>पहली बार की सेटिंग: अपनी चाबियाँ यहाँ डालिए। ये सिर्फ़ इसी फ़ोन या ब्राउज़र में सेव होंगी।</p>
-  <input id="k1" placeholder="Groq की चाबी">
+  <input id="k1" placeholder="Groq की चाबी (gsk_ से शुरू)">
   <input id="k2" placeholder="ElevenLabs की चाबी">
   <input id="k3" placeholder="आवाज़ की ID (Voice ID)">
   <button id="save">सेव करो</button>
@@ -38,9 +39,13 @@
 
 <script>
 const NAAM = "अनु";
-let GROQ_KEY = localStorage.getItem("anu_k1") || "";
-let ELEVEN_KEY = localStorage.getItem("anu_k2") || "";
-let VOICE_ID = localStorage.getItem("anu_k3") || "";
+const MODELS = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+
+function saaf(s) { return (s || "").replace(/[^\x21-\x7E]/g, "").replace(/["']/g, ""); }
+
+let GROQ_KEY = saaf(localStorage.getItem("anu_k1"));
+let ELEVEN_KEY = saaf(localStorage.getItem("anu_k2"));
+let VOICE_ID = saaf(localStorage.getItem("anu_k3"));
 
 const setup = document.getElementById("setup");
 const main = document.getElementById("main");
@@ -51,18 +56,23 @@ function dikhao() {
   if (GROQ_KEY && ELEVEN_KEY && VOICE_ID) { setup.style.display = "none"; main.style.display = "flex"; }
   else { setup.style.display = "block"; main.style.display = "none"; }
 }
+
 document.getElementById("save").onclick = () => {
-  GROQ_KEY = document.getElementById("k1").value.trim();
-  ELEVEN_KEY = document.getElementById("k2").value.trim();
-  VOICE_ID = document.getElementById("k3").value.trim();
+  GROQ_KEY = saaf(document.getElementById("k1").value);
+  ELEVEN_KEY = saaf(document.getElementById("k2").value);
+  VOICE_ID = saaf(document.getElementById("k3").value);
   localStorage.setItem("anu_k1", GROQ_KEY);
   localStorage.setItem("anu_k2", ELEVEN_KEY);
   localStorage.setItem("anu_k3", VOICE_ID);
   dikhao();
 };
+
 document.getElementById("chabi").onclick = () => {
-  localStorage.removeItem("anu_k1"); localStorage.removeItem("anu_k2"); localStorage.removeItem("anu_k3");
-  GROQ_KEY = ""; ELEVEN_KEY = ""; VOICE_ID = ""; dikhao();
+  localStorage.removeItem("anu_k1");
+  localStorage.removeItem("anu_k2");
+  localStorage.removeItem("anu_k3");
+  GROQ_KEY = ""; ELEVEN_KEY = ""; VOICE_ID = "";
+  dikhao();
 };
 dikhao();
 
@@ -86,28 +96,50 @@ function systemMsg() {
 
 function add(cls, text) {
   const d = document.createElement("div");
-  d.className = cls; d.textContent = text;
-  chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+  d.className = cls;
+  d.textContent = text;
+  chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
 }
 
-history.forEach(m => { if (m.role === "user") add("me", m.content); else if (m.role === "assistant") add("anu", m.content); });
+history.forEach(m => {
+  if (m.role === "user") add("me", m.content);
+  else if (m.role === "assistant") add("anu", m.content);
+});
 
+// ---- Groq: असली एरर दिखाने वाला ----
 async function groq(messages, maxTokens) {
-  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Authorization": "Bearer " + GROQ_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: messages, max_tokens: maxTokens })
-  });
-  const j = await r.json();
-  return j.choices[0].message.content;
+  let lastErr = "";
+  for (const m of MODELS) {
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + GROQ_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: m, messages: messages, max_tokens: maxTokens })
+    });
+    let j = {};
+    try { j = await r.json(); } catch (e) {}
+    if (r.ok && j.choices && j.choices[0]) return j.choices[0].message.content;
+    const msg = (j.error && j.error.message) ? j.error.message : "अनजान गड़बड़";
+    lastErr = "Groq कोड " + r.status + ": " + msg;
+    if (r.status === 401 || r.status === 403) {
+      lastErr += " (Groq की चाबी ग़लत है या बंद हो गई, नई बनाकर डालिए)";
+      break;
+    }
+  }
+  throw new Error(lastErr);
 }
 
 async function socho(text) {
   history.push({ role: "user", content: text });
-  const jawab = await groq([systemMsg()].concat(history.slice(-20)), 150);
-  history.push({ role: "assistant", content: jawab });
-  saveSab();
-  return jawab;
+  try {
+    const jawab = await groq([systemMsg()].concat(history.slice(-20)), 150);
+    history.push({ role: "assistant", content: jawab });
+    saveSab();
+    return jawab;
+  } catch (e) {
+    history.pop();
+    throw e;
+  }
 }
 
 async function yaadKaro(suna, jawab) {
@@ -123,38 +155,68 @@ async function yaadKaro(suna, jawab) {
   } catch (e) {}
 }
 
+// ---- ElevenLabs: असली एरर दिखाने वाला ----
 async function bolo(text) {
   const r = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" + VOICE_ID + "?output_format=mp3_44100_64", {
     method: "POST",
     headers: { "xi-api-key": ELEVEN_KEY, "Content-Type": "application/json" },
     body: JSON.stringify({ text: text, model_id: "eleven_flash_v2_5" })
   });
+  if (!r.ok) {
+    let t = "";
+    try {
+      const j = await r.json();
+      t = (j.detail && j.detail.message) ? j.detail.message : JSON.stringify(j);
+    } catch (e) {}
+    throw new Error("ElevenLabs कोड " + r.status + ": " + t);
+  }
   const blob = await r.blob();
   const audio = new Audio(URL.createObjectURL(blob));
   await audio.play();
 }
 
+// ---- सुनना ----
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-const rec = new SR();
-rec.lang = "hi-IN";
-rec.onresult = async (e) => {
-  const suna = e.results[0][0].transcript;
-  add("me", suna);
-  btn.textContent = "सोच रही हूँ...";
-  try {
-    const jawab = await socho(suna);
-    add("anu", jawab);
-    bolo(jawab);
+if (!SR) {
+  add("err", "इस ब्राउज़र में बोलकर सुनने की सुविधा नहीं है। Chrome इस्तेमाल कीजिए।");
+} else {
+  const rec = new SR();
+  rec.lang = "hi-IN";
+
+  rec.onresult = async (e) => {
+    const suna = e.results[0][0].transcript;
+    add("me", suna);
+    btn.textContent = "सोच रही हूँ...";
+    let jawab = "";
+    try {
+      jawab = await socho(suna);
+      add("anu", jawab);
+    } catch (err) {
+      add("err", "गड़बड़: " + err.message);
+      btn.textContent = "बोलिए";
+      return;
+    }
+    try {
+      await bolo(jawab);
+    } catch (err) {
+      add("err", "आवाज़ में गड़बड़: " + err.message);
+    }
     yaadKaro(suna, jawab);
-  } catch (err) { add("anu", "कुछ गड़बड़ हो गई: " + err); }
-  btn.textContent = "बोलिए";
-};
-rec.onerror = () => { btn.textContent = "बोलिए"; };
-btn.onclick = () => { btn.textContent = "सुन रही हूँ..."; rec.start(); };
+    btn.textContent = "बोलिए";
+  };
+
+  rec.onerror = () => { btn.textContent = "बोलिए"; };
+  rec.onend = () => { if (btn.textContent === "सुन रही हूँ...") btn.textContent = "बोलिए"; };
+  btn.onclick = () => {
+    btn.textContent = "सुन रही हूँ...";
+    try { rec.start(); } catch (e) { btn.textContent = "बोलिए"; }
+  };
+}
 
 document.getElementById("bhool").onclick = () => {
   if (confirm("अनु की सारी याददाश्त मिटा दूँ?")) {
-    localStorage.removeItem("anu_yaadein"); localStorage.removeItem("anu_history");
+    localStorage.removeItem("anu_yaadein");
+    localStorage.removeItem("anu_history");
     yaadein = []; history = []; chat.innerHTML = "";
   }
 };
