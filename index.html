@@ -39,13 +39,15 @@
 
 <script>
 const NAAM = "अनु";
-const MODELS = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+const PASAND = ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "llama-3.1-8b-instant", "llama-3.3-70b-versatile"];
+const NAHI = /whisper|tts|guard|orpheus|compound|embed|safeguard|allam/i;
 
 function saaf(s) { return (s || "").replace(/[^\x21-\x7E]/g, "").replace(/["']/g, ""); }
 
 let GROQ_KEY = saaf(localStorage.getItem("anu_k1"));
 let ELEVEN_KEY = saaf(localStorage.getItem("anu_k2"));
 let VOICE_ID = saaf(localStorage.getItem("anu_k3"));
+let modelList = [];
 
 const setup = document.getElementById("setup");
 const main = document.getElementById("main");
@@ -64,6 +66,7 @@ document.getElementById("save").onclick = () => {
   localStorage.setItem("anu_k1", GROQ_KEY);
   localStorage.setItem("anu_k2", ELEVEN_KEY);
   localStorage.setItem("anu_k3", VOICE_ID);
+  modelList = [];
   dikhao();
 };
 
@@ -71,7 +74,7 @@ document.getElementById("chabi").onclick = () => {
   localStorage.removeItem("anu_k1");
   localStorage.removeItem("anu_k2");
   localStorage.removeItem("anu_k3");
-  GROQ_KEY = ""; ELEVEN_KEY = ""; VOICE_ID = "";
+  GROQ_KEY = ""; ELEVEN_KEY = ""; VOICE_ID = ""; modelList = [];
   dikhao();
 };
 dikhao();
@@ -107,20 +110,47 @@ history.forEach(m => {
   else if (m.role === "assistant") add("anu", m.content);
 });
 
-// ---- Groq: असली एरर दिखाने वाला ----
+// ---- Groq: चालू मॉडलों की सूची अपने आप निकालना ----
+async function modelDhundo() {
+  const r = await fetch("https://api.groq.com/openai/v1/models", {
+    headers: { "Authorization": "Bearer " + GROQ_KEY }
+  });
+  let j = {};
+  try { j = await r.json(); } catch (e) {}
+  if (!r.ok) {
+    const msg = (j.error && j.error.message) ? j.error.message : "अनजान गड़बड़";
+    let t = "Groq मॉडल सूची कोड " + r.status + ": " + msg;
+    if (r.status === 401 || r.status === 403) t += " (Groq की चाबी ग़लत है या बंद हो गई, नई बनाकर डालिए)";
+    throw new Error(t);
+  }
+  const ids = (j.data || []).map(x => x.id).filter(id => !NAHI.test(id));
+  const pehle = PASAND.filter(id => ids.includes(id));
+  const baaki = ids.filter(id => !PASAND.includes(id));
+  modelList = pehle.concat(baaki);
+  if (modelList.length === 0) throw new Error("Groq में कोई चालू मॉडल नहीं मिला।");
+}
+
 async function groq(messages, maxTokens) {
+  if (modelList.length === 0) await modelDhundo();
   let lastErr = "";
-  for (const m of MODELS) {
+  for (const m of modelList.slice(0, 5)) {
+    const gptoss = m.startsWith("openai/gpt-oss");
+    const body = { model: m, messages: messages, max_tokens: gptoss ? maxTokens + 400 : maxTokens };
+    if (gptoss) body.reasoning_effort = "low";
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: { "Authorization": "Bearer " + GROQ_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: m, messages: messages, max_tokens: maxTokens })
+      body: JSON.stringify(body)
     });
     let j = {};
     try { j = await r.json(); } catch (e) {}
-    if (r.ok && j.choices && j.choices[0]) return j.choices[0].message.content;
-    const msg = (j.error && j.error.message) ? j.error.message : "अनजान गड़बड़";
-    lastErr = "Groq कोड " + r.status + ": " + msg;
+    const txt = (r.ok && j.choices && j.choices[0] && j.choices[0].message) ? j.choices[0].message.content : "";
+    if (txt && txt.trim()) {
+      modelList = [m].concat(modelList.filter(x => x !== m));
+      return txt.trim();
+    }
+    const msg = (j.error && j.error.message) ? j.error.message : "खाली जवाब आया";
+    lastErr = "Groq (" + m + ") कोड " + r.status + ": " + msg;
     if (r.status === 401 || r.status === 403) {
       lastErr += " (Groq की चाबी ग़लत है या बंद हो गई, नई बनाकर डालिए)";
       break;
@@ -155,7 +185,7 @@ async function yaadKaro(suna, jawab) {
   } catch (e) {}
 }
 
-// ---- ElevenLabs: असली एरर दिखाने वाला ----
+// ---- ElevenLabs: आवाज़ ----
 async function bolo(text) {
   const r = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" + VOICE_ID + "?output_format=mp3_44100_64", {
     method: "POST",
