@@ -3,20 +3,31 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#111111">
 <title>अनु</title>
 <style>
-  body { font-family: sans-serif; background: #111; color: #fff; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-  h1 { text-align: center; margin: 12px 0 0; }
+  * { box-sizing: border-box; }
+  body { font-family: sans-serif; background: #111; color: #fff; margin: 0; display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+  h1 { text-align: center; margin: 10px 0 4px; font-size: 22px; }
   #setup { padding: 16px; }
-  #setup input { display: block; width: 100%; box-sizing: border-box; margin: 8px 0; padding: 12px; font-size: 16px; border-radius: 8px; border: none; }
+  #setup input { display: block; width: 100%; margin: 8px 0; padding: 12px; font-size: 16px; border-radius: 8px; border: none; }
   #setup button { padding: 14px; width: 100%; font-size: 18px; border: none; border-radius: 10px; background: #e91e63; color: #fff; }
   #main { display: none; flex: 1; flex-direction: column; min-height: 0; }
+  #media { display: none; padding: 0 12px 6px; text-align: center; }
+  #vid, #prev { display: none; max-width: 100%; max-height: 26vh; border-radius: 10px; margin: 0 auto; }
   #chat { flex: 1; overflow-y: auto; padding: 12px; }
   .me { text-align: right; color: #8ab4ff; margin: 8px 0; }
   .anu { text-align: left; color: #ffd28a; margin: 8px 0; }
   .err { text-align: left; color: #ff7b7b; margin: 8px 0; font-size: 14px; }
-  #btn { margin: 12px; padding: 18px; font-size: 20px; border: none; border-radius: 14px; background: #e91e63; color: #fff; }
-  .chhota { margin: 0 12px 12px; padding: 8px; font-size: 14px; border: none; border-radius: 10px; background: #333; color: #aaa; }
+  .info { text-align: center; color: #888; margin: 8px 0; font-size: 13px; }
+  .row { display: flex; gap: 6px; padding: 0 12px 8px; flex-wrap: wrap; }
+  .row button { flex: 1; min-width: 90px; padding: 10px 6px; font-size: 14px; border: none; border-radius: 10px; background: #2a2a2a; color: #ddd; }
+  #live { margin: 6px 12px 8px; padding: 16px; font-size: 19px; border: none; border-radius: 14px; background: #e91e63; color: #fff; }
+  #live.on { background: #2e7d32; }
+  #txtrow { display: flex; gap: 6px; padding: 0 12px 8px; }
+  #txt { flex: 1; padding: 10px; font-size: 16px; border-radius: 10px; border: none; min-width: 0; }
+  #send { padding: 10px 16px; font-size: 16px; border: none; border-radius: 10px; background: #e91e63; color: #fff; }
+  .chhota { color: #999 !important; font-size: 12px !important; }
 </style>
 </head>
 <body>
@@ -31,53 +42,76 @@
 </div>
 
 <div id="main">
+  <div id="media">
+    <video id="vid" playsinline muted></video>
+    <img id="prev" alt="फ़ोटो">
+  </div>
   <div id="chat"></div>
-  <button id="btn">बोलिए</button>
-  <button class="chhota" id="bhool">सारी याददाश्त मिटाओ</button>
-  <button class="chhota" id="chabi">चाबियाँ बदलो</button>
+  <button id="live">🎤 बातचीत शुरू करो</button>
+  <div id="txtrow">
+    <input id="txt" placeholder="या यहाँ लिखकर पूछिए">
+    <button id="send">भेजो</button>
+  </div>
+  <div class="row">
+    <button id="foto">📷 फ़ोटो डालो</button>
+    <button id="cam">🎥 कैमरा</button>
+    <button id="screen">🖥️ स्क्रीन</button>
+  </div>
+  <div class="row">
+    <button id="flip">🔄 कैमरा पलटो</button>
+    <button id="chup">🔇 चुप</button>
+    <button id="bhashaBtn">भाषा: हिंदी</button>
+  </div>
+  <div class="row">
+    <button class="chhota" id="bhool">याददाश्त मिटाओ</button>
+    <button class="chhota" id="chabi">चाबियाँ बदलो</button>
+  </div>
+  <input type="file" id="file" accept="image/*" style="display:none">
 </div>
 
 <script>
 const NAAM = "अनु";
 const PASAND = ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "llama-3.1-8b-instant", "llama-3.3-70b-versatile"];
+const VISION_PASAND = ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b", "meta-llama/llama-4-scout-17b-16e-instruct", "meta-llama/llama-4-maverick-17b-128e-instruct"];
 const NAHI = /whisper|tts|guard|orpheus|compound|embed|safeguard|allam/i;
+const VISION_RE = /vision|scout|maverick|qwen|vl/i;
 
+const $ = id => document.getElementById(id);
 function saaf(s) { return (s || "").replace(/[^\x21-\x7E]/g, "").replace(/["']/g, ""); }
 
 let GROQ_KEY = saaf(localStorage.getItem("anu_k1"));
 let ELEVEN_KEY = saaf(localStorage.getItem("anu_k2"));
 let VOICE_ID = saaf(localStorage.getItem("anu_k3"));
-let modelList = [];
+let textModels = [], visionModels = [];
+let lang = localStorage.getItem("anu_lang") || "hi-IN";
+let liveOn = false, speaking = false, busy = false;
+let stream = null, isScreen = false, facing = "environment";
+let pendingPhoto = null, curAudio = null, wl = null, rec = null;
 
-const setup = document.getElementById("setup");
-const main = document.getElementById("main");
-const chat = document.getElementById("chat");
-const btn = document.getElementById("btn");
-
+// ---- चाबियाँ ----
 function dikhao() {
-  if (GROQ_KEY && ELEVEN_KEY && VOICE_ID) { setup.style.display = "none"; main.style.display = "flex"; }
-  else { setup.style.display = "block"; main.style.display = "none"; }
+  if (GROQ_KEY && ELEVEN_KEY && VOICE_ID) { $("setup").style.display = "none"; $("main").style.display = "flex"; }
+  else { $("setup").style.display = "block"; $("main").style.display = "none"; }
 }
-
-document.getElementById("save").onclick = () => {
-  GROQ_KEY = saaf(document.getElementById("k1").value);
-  ELEVEN_KEY = saaf(document.getElementById("k2").value);
-  VOICE_ID = saaf(document.getElementById("k3").value);
+$("save").onclick = () => {
+  GROQ_KEY = saaf($("k1").value);
+  ELEVEN_KEY = saaf($("k2").value);
+  VOICE_ID = saaf($("k3").value);
   localStorage.setItem("anu_k1", GROQ_KEY);
   localStorage.setItem("anu_k2", ELEVEN_KEY);
   localStorage.setItem("anu_k3", VOICE_ID);
-  modelList = [];
+  textModels = []; visionModels = [];
   dikhao();
 };
-
-document.getElementById("chabi").onclick = () => {
+$("chabi").onclick = () => {
+  liveOn = false; if (rec) { try { rec.abort(); } catch (e) {} }
+  chup(); stopStream(); mediaDikhao(); setLive();
   localStorage.removeItem("anu_k1");
   localStorage.removeItem("anu_k2");
   localStorage.removeItem("anu_k3");
-  GROQ_KEY = ""; ELEVEN_KEY = ""; VOICE_ID = ""; modelList = [];
+  GROQ_KEY = ""; ELEVEN_KEY = ""; VOICE_ID = ""; textModels = []; visionModels = [];
   dikhao();
 };
-dikhao();
 
 // ---- याददाश्त ----
 let yaadein = JSON.parse(localStorage.getItem("anu_yaadein") || "[]");
@@ -89,7 +123,8 @@ function saveSab() {
 }
 
 function systemMsg() {
-  let s = "तुम " + NAAM + " हो, शोएब की दोस्त और पर्सनल असिस्टेंट। दोस्त की तरह अपनेपन से बात करो। हमेशा हिंदी में, छोटे और सीधे जवाब दो, ज़्यादा से ज़्यादा दो वाक्य।";
+  let s = "तुम " + NAAM + " हो, शोएब की दोस्त और पर्सनल असिस्टेंट। दोस्त की तरह अपनेपन से बात करो। हमेशा हिंदी में, छोटे और सीधे जवाब दो, ज़्यादा से ज़्यादा दो वाक्य। सच बोलो: तुम सिर्फ़ बातचीत कर सकती हो, बातें याद रख सकती हो, और जब शोएब तस्वीर या कैमरा दिखाए तब उसे देख सकती हो। तुम रिमाइंडर, अलार्म, शेड्यूल, ख़बरें, ट्रैफ़िक, इंटरनेट खोज, कॉल या मैसेज नहीं कर सकती, और ऐसा कर सकने का दावा कभी मत करो। अगर शोएब ऐसा कुछ माँगे तो साफ़ बता दो कि ये अभी मुझसे नहीं होगा।";
+  if (lang === "en-IN") s += " शोएब अभी अंग्रेज़ी मोड में है, इसलिए जवाब अंग्रेज़ी में दो।";
   if (yaadein.length > 0) {
     s += "\n\nशोएब के बारे में तुम्हें ये बातें याद हैं:\n- " + yaadein.join("\n- ");
     s += "\nइन्हें ज़रूरत पड़ने पर स्वाभाविक रूप से इस्तेमाल करो।";
@@ -101,8 +136,8 @@ function add(cls, text) {
   const d = document.createElement("div");
   d.className = cls;
   d.textContent = text;
-  chat.appendChild(d);
-  chat.scrollTop = chat.scrollHeight;
+  $("chat").appendChild(d);
+  $("chat").scrollTop = $("chat").scrollHeight;
 }
 
 history.forEach(m => {
@@ -110,7 +145,15 @@ history.forEach(m => {
   else if (m.role === "assistant") add("anu", m.content);
 });
 
-// ---- Groq: चालू मॉडलों की सूची अपने आप निकालना ----
+$("bhool").onclick = () => {
+  if (confirm("अनु की सारी याददाश्त मिटा दूँ?")) {
+    localStorage.removeItem("anu_yaadein");
+    localStorage.removeItem("anu_history");
+    yaadein = []; history = []; $("chat").innerHTML = "";
+  }
+};
+
+// ---- Groq ----
 async function modelDhundo() {
   const r = await fetch("https://api.groq.com/openai/v1/models", {
     headers: { "Authorization": "Bearer " + GROQ_KEY }
@@ -124,16 +167,14 @@ async function modelDhundo() {
     throw new Error(t);
   }
   const ids = (j.data || []).map(x => x.id).filter(id => !NAHI.test(id));
-  const pehle = PASAND.filter(id => ids.includes(id));
-  const baaki = ids.filter(id => !PASAND.includes(id));
-  modelList = pehle.concat(baaki);
-  if (modelList.length === 0) throw new Error("Groq में कोई चालू मॉडल नहीं मिला।");
+  textModels = PASAND.filter(id => ids.includes(id)).concat(ids.filter(id => !PASAND.includes(id)));
+  visionModels = VISION_PASAND.filter(id => ids.includes(id)).concat(ids.filter(id => VISION_RE.test(id) && !VISION_PASAND.includes(id)));
+  if (!textModels.length) throw new Error("Groq में कोई चालू मॉडल नहीं मिला।");
 }
 
-async function groq(messages, maxTokens) {
-  if (modelList.length === 0) await modelDhundo();
+async function groqCall(list, messages, maxTokens, tries) {
   let lastErr = "";
-  for (const m of modelList.slice(0, 5)) {
+  for (const m of list.slice(0, tries)) {
     const gptoss = m.startsWith("openai/gpt-oss");
     const body = { model: m, messages: messages, max_tokens: gptoss ? maxTokens + 400 : maxTokens };
     if (gptoss) body.reasoning_effort = "low";
@@ -144,10 +185,11 @@ async function groq(messages, maxTokens) {
     });
     let j = {};
     try { j = await r.json(); } catch (e) {}
-    const txt = (r.ok && j.choices && j.choices[0] && j.choices[0].message) ? j.choices[0].message.content : "";
-    if (txt && txt.trim()) {
-      modelList = [m].concat(modelList.filter(x => x !== m));
-      return txt.trim();
+    let txt = (r.ok && j.choices && j.choices[0] && j.choices[0].message) ? (j.choices[0].message.content || "") : "";
+    txt = txt.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+    if (txt) {
+      list.splice(0, list.length, m, ...list.filter(x => x !== m));
+      return txt;
     }
     const msg = (j.error && j.error.message) ? j.error.message : "खाली जवाब आया";
     lastErr = "Groq (" + m + ") कोड " + r.status + ": " + msg;
@@ -156,20 +198,21 @@ async function groq(messages, maxTokens) {
       break;
     }
   }
-  throw new Error(lastErr);
+  throw new Error(lastErr || "कोई मॉडल नहीं चला");
 }
 
-async function socho(text) {
-  history.push({ role: "user", content: text });
-  try {
-    const jawab = await groq([systemMsg()].concat(history.slice(-20)), 150);
-    history.push({ role: "assistant", content: jawab });
-    saveSab();
-    return jawab;
-  } catch (e) {
-    history.pop();
-    throw e;
-  }
+async function groq(messages, maxTokens) {
+  if (!textModels.length) await modelDhundo();
+  return await groqCall(textModels, messages, maxTokens, 5);
+}
+
+async function dekho(suna, img) {
+  if (!visionModels.length && !textModels.length) await modelDhundo();
+  if (!visionModels.length) throw new Error("Groq में तस्वीर समझने वाला कोई मॉडल नहीं मिला।");
+  const sandarbh = history.slice(-6).map(m => (m.role === "user" ? "शोएब: " : "अनु: ") + m.content).join("\n");
+  const prompt = systemMsg().content + "\n\n" + (sandarbh ? "अब तक की बातचीत:\n" + sandarbh + "\n\n" : "") + "शोएब ने ये तस्वीर दिखाकर कहा: " + suna;
+  const msgs = [{ role: "user", content: [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: img } }] }];
+  return await groqCall(visionModels, msgs, 400, 6);
 }
 
 async function yaadKaro(suna, jawab) {
@@ -185,8 +228,8 @@ async function yaadKaro(suna, jawab) {
   } catch (e) {}
 }
 
-// ---- ElevenLabs: आवाज़ ----
-async function bolo(text) {
+// ---- आवाज़ ----
+async function elevenBolo(text) {
   const r = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" + VOICE_ID + "?output_format=mp3_44100_64", {
     method: "POST",
     headers: { "xi-api-key": ELEVEN_KEY, "Content-Type": "application/json" },
@@ -200,56 +243,241 @@ async function bolo(text) {
     } catch (e) {}
     throw new Error("ElevenLabs कोड " + r.status + ": " + t);
   }
-  const blob = await r.blob();
-  const audio = new Audio(URL.createObjectURL(blob));
-  await audio.play();
+  const url = URL.createObjectURL(await r.blob());
+  await new Promise((res, rej) => {
+    const a = new Audio(url);
+    curAudio = a;
+    a.onended = () => { curAudio = null; res(); };
+    a.onerror = () => { curAudio = null; rej(new Error("आवाज़ चल नहीं पाई")); };
+    a.play().catch(e => { curAudio = null; rej(e); });
+  });
 }
 
-// ---- सुनना ----
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-if (!SR) {
-  add("err", "इस ब्राउज़र में बोलकर सुनने की सुविधा नहीं है। Chrome इस्तेमाल कीजिए।");
-} else {
-  const rec = new SR();
-  rec.lang = "hi-IN";
-
-  rec.onresult = async (e) => {
-    const suna = e.results[0][0].transcript;
-    add("me", suna);
-    btn.textContent = "सोच रही हूँ...";
-    let jawab = "";
-    try {
-      jawab = await socho(suna);
-      add("anu", jawab);
-    } catch (err) {
-      add("err", "गड़बड़: " + err.message);
-      btn.textContent = "बोलिए";
-      return;
-    }
-    try {
-      await bolo(jawab);
-    } catch (err) {
-      add("err", "आवाज़ में गड़बड़: " + err.message);
-    }
-    yaadKaro(suna, jawab);
-    btn.textContent = "बोलिए";
-  };
-
-  rec.onerror = () => { btn.textContent = "बोलिए"; };
-  rec.onend = () => { if (btn.textContent === "सुन रही हूँ...") btn.textContent = "बोलिए"; };
-  btn.onclick = () => {
-    btn.textContent = "सुन रही हूँ...";
-    try { rec.start(); } catch (e) { btn.textContent = "बोलिए"; }
-  };
+function browserBolo(text) {
+  return new Promise(res => {
+    if (!window.speechSynthesis) return res();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang;
+    u.onend = res;
+    u.onerror = res;
+    speechSynthesis.speak(u);
+  });
 }
 
-document.getElementById("bhool").onclick = () => {
-  if (confirm("अनु की सारी याददाश्त मिटा दूँ?")) {
-    localStorage.removeItem("anu_yaadein");
-    localStorage.removeItem("anu_history");
-    yaadein = []; history = []; chat.innerHTML = "";
+async function bolo(text) {
+  speaking = true;
+  if (rec) { try { rec.abort(); } catch (e) {} }
+  try { await elevenBolo(text); }
+  catch (err) {
+    add("err", "आवाज़ में गड़बड़: " + err.message + " (अभी फ़ोन की अपनी आवाज़ से बोल रही हूँ)");
+    await browserBolo(text);
   }
+  speaking = false;
+}
+
+function chup() {
+  if (curAudio) { try { curAudio.pause(); curAudio.dispatchEvent(new Event("ended")); } catch (e) {} }
+  if (window.speechSynthesis) speechSynthesis.cancel();
+}
+$("chup").onclick = chup;
+
+// ---- मुख्य सवाल-जवाब ----
+async function poocho(suna) {
+  if (busy) return;
+  busy = true;
+  const img = pendingPhoto || frameLo();
+  const usedPhoto = !!pendingPhoto;
+  add("me", suna + (img ? "  📷" : ""));
+  setLive();
+  let jawab = "";
+  try {
+    if (img) jawab = await dekho(suna, img);
+    else jawab = await groq([systemMsg()].concat(history.slice(-20), [{ role: "user", content: suna }]), 150);
+    history.push({ role: "user", content: (img ? "(तस्वीर के साथ) " : "") + suna });
+    history.push({ role: "assistant", content: jawab });
+    saveSab();
+  } catch (err) {
+    add("err", "गड़बड़: " + err.message);
+    busy = false; setLive(); sunna();
+    return;
+  }
+  if (usedPhoto) { pendingPhoto = null; mediaDikhao(); }
+  add("anu", jawab);
+  await bolo(jawab);
+  yaadKaro(suna, jawab);
+  busy = false; setLive(); sunna();
+}
+
+function bhejo() {
+  if (busy) return;
+  const t = $("txt").value.trim();
+  if (!t) return;
+  $("txt").value = "";
+  poocho(t);
+}
+$("send").onclick = bhejo;
+$("txt").onkeydown = e => { if (e.key === "Enter") bhejo(); };
+
+// ---- लाइव सुनना ----
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR) {
+  rec = new SR();
+  rec.lang = lang;
+  rec.continuous = false;
+  rec.interimResults = false;
+  rec.onresult = e => {
+    const t = (e.results[0][0].transcript || "").trim();
+    if (t) poocho(t);
+  };
+  rec.onend = () => { if (liveOn && !speaking && !busy) setTimeout(sunna, 400); };
+  rec.onerror = ev => {
+    if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
+      liveOn = false; setLive();
+      add("err", "माइक की अनुमति नहीं मिली। ब्राउज़र की सेटिंग में माइक चालू कीजिए।");
+    }
+  };
+} else {
+  add("info", "इस ब्राउज़र में बोलकर सुनना नहीं है, Chrome इस्तेमाल कीजिए। तब तक लिखकर पूछ सकते हैं।");
+}
+
+function sunna() {
+  if (!rec || !liveOn || speaking || busy) return;
+  try { rec.start(); } catch (e) {}
+}
+
+function setLive() {
+  const b = $("live");
+  b.classList.toggle("on", liveOn);
+  if (!liveOn) b.textContent = "🎤 बातचीत शुरू करो";
+  else b.textContent = busy ? "💭 अनु सोच या बोल रही है..." : "🟢 सुन रही हूँ... (रोकने के लिए दबाइए)";
+}
+
+async function jagaRakho() {
+  try { if (navigator.wakeLock) wl = await navigator.wakeLock.request("screen"); } catch (e) {}
+}
+
+$("live").onclick = () => {
+  if (!rec) { add("err", "इस ब्राउज़र में बोलकर सुनना नहीं है, Chrome इस्तेमाल कीजिए।"); return; }
+  liveOn = !liveOn;
+  if (liveOn) { jagaRakho(); sunna(); }
+  else {
+    try { rec.abort(); } catch (e) {}
+    chup();
+    if (wl) { wl.release().catch(() => {}); wl = null; }
+  }
+  setLive();
 };
+
+function bhashaDikhao() { $("bhashaBtn").textContent = "भाषा: " + (lang === "hi-IN" ? "हिंदी" : "English"); }
+$("bhashaBtn").onclick = () => {
+  lang = lang === "hi-IN" ? "en-IN" : "hi-IN";
+  localStorage.setItem("anu_lang", lang);
+  if (rec) { rec.lang = lang; try { rec.abort(); } catch (e) {} }
+  bhashaDikhao();
+};
+
+// ---- फ़ोटो, कैमरा, स्क्रीन ----
+function mediaDikhao() {
+  $("vid").style.display = stream ? "block" : "none";
+  $("prev").style.display = pendingPhoto ? "block" : "none";
+  $("media").style.display = (stream || pendingPhoto) ? "block" : "none";
+  $("cam").textContent = (stream && !isScreen) ? "⏹ कैमरा बंद" : "🎥 कैमरा";
+  $("screen").textContent = (stream && isScreen) ? "⏹ स्क्रीन बंद" : "🖥️ स्क्रीन";
+}
+
+function stopStream() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); }
+  stream = null; isScreen = false;
+  $("vid").srcObject = null;
+}
+
+function frameLo() {
+  const v = $("vid");
+  if (!stream || !v.videoWidth) return null;
+  const s = Math.min(1, 768 / Math.max(v.videoWidth, v.videoHeight));
+  const c = document.createElement("canvas");
+  c.width = Math.round(v.videoWidth * s);
+  c.height = Math.round(v.videoHeight * s);
+  c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.7);
+}
+
+async function startCamera() {
+  stopStream();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    add("err", "इस ब्राउज़र में कैमरा नहीं चलता।"); mediaDikhao(); return;
+  }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: false });
+    isScreen = false;
+    $("vid").srcObject = stream;
+    await $("vid").play();
+    add("info", "कैमरा चालू है। अब आप जो भी पूछेंगे, अनु उस पल की तस्वीर देखकर जवाब देगी।");
+  } catch (e) {
+    stream = null;
+    add("err", "कैमरा नहीं खुला: " + e.message);
+  }
+  mediaDikhao();
+}
+
+async function startScreen() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+    add("err", "इस ब्राउज़र में स्क्रीन शेयर नहीं चलता। फ़ोन के Chrome में अक्सर नहीं मिलता, लैपटॉप पर चलेगा।");
+    return;
+  }
+  stopStream();
+  try {
+    stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+    isScreen = true;
+    $("vid").srcObject = stream;
+    await $("vid").play();
+    stream.getVideoTracks()[0].onended = () => { stopStream(); mediaDikhao(); };
+    add("info", "स्क्रीन शेयर चालू है। अब आप जो भी पूछेंगे, अनु आपकी स्क्रीन की उस पल की तस्वीर देखेगी।");
+  } catch (e) {
+    stream = null;
+    add("err", "स्क्रीन शेयर नहीं हुआ: " + e.message);
+  }
+  mediaDikhao();
+}
+
+$("cam").onclick = () => { if (stream && !isScreen) { stopStream(); mediaDikhao(); } else startCamera(); };
+$("screen").onclick = () => { if (stream && isScreen) { stopStream(); mediaDikhao(); } else startScreen(); };
+$("flip").onclick = () => {
+  facing = facing === "environment" ? "user" : "environment";
+  if (stream && !isScreen) startCamera();
+  else add("info", "पहले कैमरा चालू कीजिए।");
+};
+
+$("foto").onclick = () => $("file").click();
+$("file").onchange = () => {
+  const f = $("file").files[0];
+  if (!f) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      const s = Math.min(1, 1024 / Math.max(im.width, im.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(im.width * s);
+      c.height = Math.round(im.height * s);
+      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+      pendingPhoto = c.toDataURL("image/jpeg", 0.8);
+      $("prev").src = pendingPhoto;
+      mediaDikhao();
+      add("info", "फ़ोटो जुड़ गई। अब बोलकर या लिखकर पूछिए। हटाने के लिए फ़ोटो पर दबाइए।");
+    };
+    im.onerror = () => add("err", "ये फ़ोटो खुल नहीं पाई।");
+    im.src = fr.result;
+  };
+  fr.readAsDataURL(f);
+  $("file").value = "";
+};
+$("prev").onclick = () => { pendingPhoto = null; mediaDikhao(); };
+
+dikhao();
+setLive();
+bhashaDikhao();
+mediaDikhao();
 </script>
 </body>
 </html>
