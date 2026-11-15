@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b0b45">
+<title>अनु स्टूडियो</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;color:#fff;font-family:'Poppins','Noto Sans Devanagari',sans-serif;display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;background:linear-gradient(-45deg,#1b0b45,#0a2f5c,#4a0c4a,#07423a);background-size:400% 400%;animation:bg 20s ease infinite}
+@keyframes bg{0%{background-position:0 50%}50%{background-position:100% 50%}100%{background-position:0 50%}}
+header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px}
+header h1{margin:0;font-size:20px;background:linear-gradient(90deg,#ff9ad5,#ffd27a,#8ef0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+header a{color:#cde;font-size:13px;text-decoration:none;background:rgba(255,255,255,.15);padding:6px 12px;border-radius:14px}
+#stage{height:38vh;height:38dvh;display:flex;align-items:center;justify-content:center;margin:0 10px;border-radius:12px;overflow:hidden;background:conic-gradient(#bbb 25%,#fff 0 50%,#bbb 0 75%,#fff 0) 0 0/18px 18px}
+#cv{max-width:100%;max-height:100%;touch-action:none}
+#tabs{display:flex;gap:4px;padding:8px 10px 4px;overflow-x:auto}
+#tabs button{flex:1;min-width:64px;padding:9px 4px;border:none;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:13px}
+#tabs button.on{background:linear-gradient(90deg,#ff4fa3,#8a5cff)}
+#panel{flex:1;overflow-y:auto;padding:6px 12px calc(14px + env(safe-area-inset-bottom))}
+.pn{display:none}.pn.on{display:block}
+.pn h3{margin:12px 0 6px;font-size:14px;color:#ffd27a}
+.grid{display:flex;flex-wrap:wrap;gap:6px}
+.grid button,.btn{padding:10px 12px;border:none;border-radius:10px;background:rgba(255,255,255,.16);color:#fff;font:inherit;font-size:13px}
+.btn.big{background:linear-gradient(90deg,#ff4fa3,#8a5cff);font-size:16px;padding:13px 16px;width:100%}
+.grid button.on{background:#8a5cff}
+label{display:block;font-size:13px;margin:8px 0 2px;opacity:.9}
+input[type=range]{width:100%}
+input[type=text],input[type=number],select,textarea{width:100%;padding:9px;font:inherit;font-size:15px;border:none;border-radius:8px;background:rgba(255,255,255,.92);color:#111}
+input[type=color]{width:52px;height:34px;border:none;padding:0;background:none}
+.row2{display:flex;gap:8px;align-items:center}.row2>*{flex:1}
+.chk{display:flex;align-items:center;gap:6px;margin:8px 12px 0 0;font-size:13px}
+.hint{font-size:12px;opacity:.7;margin:6px 0}
+#ctlText,#ctlShape,#ctlCommon{display:none}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(0,0,0,.8);padding:9px 16px;border-radius:20px;font-size:13px;display:none;max-width:90%;text-align:center}
+</style>
+</head>
+<body>
+<header><h1>अनु स्टूडियो</h1><a href="index.html">← अनु</a></header>
+<div id="stage"><canvas id="cv"></canvas></div>
+<div id="tabs"></div>
+<div id="panel">
+
+<div class="pn" id="p0">
+  <h3>साइज़ चुनिए</h3>
+  <div class="grid" id="sizes"></div>
+  <div class="row2"><div><label>चौड़ाई</label><input type="number" id="cw" min="100" max="3000"></div><div><label>ऊँचाई</label><input type="number" id="ch" min="100" max="3000"></div></div>
+  <h3>बैकग्राउंड</h3>
+  <select data-s="bg"><option value="transparent">ट्रांसपेरेंट (PNG के लिए)</option><option value="color">एक रंग</option><option value="grad">दो रंगों का ग्रेडिएंट</option></select>
+  <div class="row2"><div><label>रंग 1</label><input type="color" data-s="bgC"></div><div><label>रंग 2</label><input type="color" data-s="bgC2"></div></div>
+</div>
+
+<div class="pn" id="p1">
+  <button class="btn big" id="pick">📷 फ़ोटो चुनिए</button>
+  <div class="grid" style="margin-top:8px"><button id="rmPhoto">❌ फ़ोटो हटाओ</button><button id="fitDoc">📐 कैनवास = फ़ोटो की साइज़</button><button id="resetPos">↺ जगह/ज़ूम सही करो</button></div>
+  <label>फ़ोटो कैसे बैठे</label>
+  <select data-s="fit"><option value="cover">पूरा भरे (किनारे कट सकते हैं)</option><option value="contain">पूरी फ़ोटो दिखे</option></select>
+  <label>ज़ूम</label><input type="range" data-s="zoom" min="0.5" max="4" step="0.05">
+  <p class="hint">फ़ोटो खिसकाने के लिए कैनवास की खाली जगह पर उँगली घुमाइए। टेक्स्ट या आकार को दबाकर घसीटने से वो खिसकता है।</p>
+</div>
+
+<div class="pn" id="p2">
+  <h3>सिनेमैटिक लुक</h3>
+  <div class="grid" id="presets"></div>
+  <p class="hint">रंग का बदलाव सिर्फ़ फ़ोटो पर लगता है, टेक्स्ट पर नहीं।</p>
+  <div id="gctl"></div>
+  <div class="row2"><div><label>छाया का रंग</label><input type="color" data-g="sCol"></div><div><label>रोशनी का रंग</label><input type="color" data-g="hCol"></div></div>
+</div>
+
+<div class="pn" id="p3">
+  <div class="grid"><button id="addT">➕ टेक्स्ट</button><button id="addS">➕ आकार</button><button id="addLogo">✨ लोगो टेम्पलेट</button><button id="addShayari">✍️ शायरी टेम्पलेट</button></div>
+  <h3>लेयर (चुनने के लिए दबाइए)</h3>
+  <div class="grid" id="layers"></div>
+  <div class="grid" style="margin-top:6px"><button id="lUp">⬆ ऊपर</button><button id="lDown">⬇ नीचे</button><button id="lDup">⧉ कॉपी</button><button id="lDel">🗑 हटाओ</button></div>
+  <div id="noSel" class="hint">कोई लेयर चुनी नहीं है। कैनवास पर टेक्स्ट दबाइए या ऊपर से जोड़िए।</div>
+
+  <div id="ctlText"><h3>टेक्स्ट</h3>
+    <textarea data-p="text" rows="3"></textarea>
+    <label>फ़ॉन्ट</label><select data-p="font" id="fontSel"></select>
+    <label>साइज़</label><input type="range" data-p="size" min="10" max="500">
+    <label>बॉक्स की चौड़ाई (लाइन कहाँ टूटे)</label><input type="range" data-p="width" min="20" max="100">
+    <label>लाइनों की दूरी</label><input type="range" data-p="lh" min="0.9" max="2" step="0.05">
+    <label>अलाइन</label><select data-p="align"><option value="center">बीच में</option><option value="left">बाएँ</option><option value="right">दाएँ</option></select>
+    <div class="grid"><label class="chk"><input type="checkbox" data-p="bold">मोटा</label><label class="chk"><input type="checkbox" data-p="italic">तिरछा</label><label class="chk"><input type="checkbox" data-p="bg">पीछे पट्टी</label></div>
+    <div class="row2"><div><label>पट्टी का रंग</label><input type="color" data-p="bgC"></div><div><label>पट्टी कितनी गहरी</label><input type="range" data-p="bgA" min="0" max="100"></div></div>
+  </div>
+
+  <div id="ctlShape"><h3>आकार</h3>
+    <label>कौन सा आकार</label><select data-p="shape"><option value="circle">गोला</option><option value="round">गोल कोनों वाला डिब्बा</option><option value="rect">आयत / पट्टी</option></select>
+    <label>चौड़ाई (कैनवास का %)</label><input type="range" data-p="w" min="2" max="200">
+    <label>ऊँचाई (कैनवास की चौड़ाई का %)</label><input type="range" data-p="h" min="2" max="200">
+    <label class="chk"><input type="checkbox" data-p="fill">अंदर रंग भरो</label>
+  </div>
+
+  <div id="ctlCommon"><h3>रंग और स्टाइल</h3>
+    <div class="row2"><div><label>रंग</label><input type="color" data-p="color"></div><div><label>दूसरा रंग</label><input type="color" data-p="color2"></div><div><label class="chk"><input type="checkbox" data-p="grad">दो रंग</label></div></div>
+    <div class="row2"><div><label>बॉर्डर का रंग</label><input type="color" data-p="stroke"></div><div><label>बॉर्डर की मोटाई</label><input type="range" data-p="strokeW" min="0" max="40"></div></div>
+    <div class="row2"><div><label class="chk"><input type="checkbox" data-p="shadow">छाया / चमक</label></div><div><label>छाया का रंग</label><input type="color" data-p="shadowC"></div></div>
+    <label>घुमाओ</label><input type="range" data-p="rot" min="-180" max="180">
+    <label>पारदर्शिता</label><input type="range" data-p="opacity" min="5" max="100">
+  </div>
+</div>
+
+<div class="pn" id="p4">
+  <label>फ़ाइल का नाम</label><input type="text" id="fname" value="anu-design">
+  <div class="grid" style="margin-top:10px;flex-direction:column">
+    <button class="btn big" id="sPng">⬇ PNG सेव (ट्रांसपेरेंट रह सकता है)</button>
+    <button class="btn big" id="sJpg">⬇ JPG सेव</button>
+    <button class="btn" id="sShare">📤 शेयर करो</button>
+    <button class="btn" id="sReset">🗑 सब साफ़ करके नया शुरू करो</button>
+  </div>
+  <p class="hint">ट्रांसपेरेंट PNG चाहिए तो साइज़ वाले टैब में बैकग्राउंड "ट्रांसपेरेंट" रखिए और फ़ोटो न जोड़िए।</p>
+</div>
+
+</div>
+<div id="toast"></div>
+<input type="file" id="file" accept="image/*" hidden>
+
+<script>
+const $=id=>document.getElementById(id);
+const S0={W:1280,H:720,bg:'grad',bgC:'#1b0b45',bgC2:'#8a5cff',fit:'cover',zoom:1,px:0,py:0};
+const S=Object.assign({},S0);
+const G0={exposure:0,contrast:0,saturation:0,warmth:0,tint:0,fade:0,vignette:0,grain:0,sAmt:0,hAmt:0,sCol:'#0a4a6e',hCol:'#ff9a3c'};
+let G=Object.assign({},G0);
+let photo=null,layers=[],sel=null,drag=null,preset='';
+const cv=$('cv'),cx=cv.getContext('2d');
+const pc=document.createElement('canvas'),pcx=pc.getContext('2d',{willReadFrequently:true});
+const mc=document.createElement('canvas').getContext('2d');
+
+const FONTS=[
+ ['Hind','Hind:wght@400;700','Hind – साफ़ हिंदी'],
+ ['Noto Sans Devanagari','Noto+Sans+Devanagari:wght@400;700','Noto Sans – सादा'],
+ ['Poppins','Poppins:wght@400;700','Poppins – मॉडर्न'],
+ ['Tiro Devanagari Hindi','Tiro+Devanagari+Hindi','Tiro – शायरी वाला'],
+ ['Kalam','Kalam:wght@400;700','Kalam – हाथ की लिखावट'],
+ ['Amita','Amita:wght@400;700','Amita – सुलेख'],
+ ['Yatra One','Yatra+One','Yatra One – मोटा'],
+ ['Rozha One','Rozha+One','Rozha One – भारी'],
+ ['Khand','Khand:wght@400;700','Khand – थंबनेल'],
+ ['Baloo 2','Baloo+2:wght@400;700','Baloo 2 – गोल मज़ेदार'],
+ ['Bebas Neue','Bebas+Neue','Bebas Neue – English थंबनेल'],
+ ['Anton','Anton','Anton – English मोटा'],
+ ['Oswald','Oswald:wght@400;700','Oswald – English'],
+ ['Montserrat','Montserrat:wght@400;700','Montserrat – English'],
+ ['Playfair Display','Playfair+Display:wght@400;700','Playfair – English शायरी'],
+ ['Pacifico','Pacifico','Pacifico – English लहराता'],
+ ['Dancing Script','Dancing+Script:wght@400;700','Dancing Script – English सुलेख']
+];
+const fontDone=new Set();
+FONTS.forEach(f=>{
+  const o=document.createElement('option');o.value=f[0];o.textContent=f[2];$('fontSel').appendChild(o);
+  const l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family='+f[1]+'&display=swap';
+  l.onload=()=>{fontDone.clear();render();};document.head.appendChild(l);
+});
+function ensureFont(L){
+  const spec=(L.bold?'700':'400')+' 40px "'+L.font+'"',key=spec+'|'+L.text;
+  if(fontDone.has(key))return;fontDone.add(key);
+  document.fonts.load(spec,L.text||'अ').then(()=>render()).catch(()=>{});
+}
+
+const PRESETS={
+ 'कोई नहीं':{},
+ 'टील-ऑरेंज':{contrast:18,saturation:12,sCol:'#00a0b0',sAmt:55,hCol:'#ff9640',hAmt:55,vignette:20},
+ 'सिनेमैटिक':{exposure:-6,contrast:24,saturation:-8,fade:12,sCol:'#0b4f6c',sAmt:60,hCol:'#ffb36b',hAmt:45,vignette:35,grain:14},
+ 'डार्क मूडी':{exposure:-18,contrast:30,saturation:-25,sCol:'#12385c',sAmt:60,hCol:'#9fb6c9',hAmt:20,vignette:55,grain:18},
+ 'गोल्डन आवर':{exposure:6,contrast:10,saturation:20,warmth:35,sCol:'#7a3b00',sAmt:30,hCol:'#ffc266',hAmt:55,vignette:20},
+ 'फ़िल्म (विंटेज)':{contrast:-8,saturation:-18,warmth:18,fade:30,sCol:'#2b4a3f',sAmt:30,hCol:'#f2d49b',hAmt:40,vignette:30,grain:35},
+ 'साइबर नीयन':{contrast:22,saturation:28,sCol:'#2a00a8',sAmt:60,hCol:'#ff3fa4',hAmt:50,vignette:25},
+ 'काला-सफ़ेद':{contrast:28,saturation:-100,fade:6,vignette:35,grain:25},
+ 'मैट':{contrast:-14,saturation:-10,fade:38,vignette:10},
+ 'बॉलीवुड वाइब्रेंट':{contrast:16,saturation:34,warmth:12,vignette:15}
+};
+const GS=[['exposure','चमक',-60,60],['contrast','कॉन्ट्रास्ट',-60,60],['saturation','रंगों की गहराई',-100,100],['warmth','ठंडा ↔ गर्म',-100,100],['tint','हरा ↔ गुलाबी',-100,100],['fade','फ़ेड (धुँधला काला)',0,100],['vignette','किनारे गहरे (वीनेट)',0,100],['grain','फ़िल्म के दाने',0,100],['sAmt','छाया में रंग की मात्रा',0,100],['hAmt','रोशनी में रंग की मात्रा',0,100]];
+GS.forEach(a=>{const d=document.createElement('div');d.innerHTML='<label>'+a[1]+'</label><input type="range" data-g="'+a[0]+'" min="'+a[2]+'" max="'+a[3]+'">';$('gctl').appendChild(d);});
+Object.keys(PRESETS).forEach(n=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>{G=Object.assign({},G0,PRESETS[n]);preset=n;sync();render();};$('presets').appendChild(b);});
+function mark(){[...$('presets').children].forEach(b=>b.classList.toggle('on',b.textContent===preset));}
+
+const SIZES=[['थंबनेल 1280×720',1280,720],['Reel/Story 1080×1920',1080,1920],['Instagram 1080×1080',1080,1080],['शायरी पोस्ट 1080×1350',1080,1350],['लोगो 1024×1024',1024,1024,'transparent']];
+SIZES.forEach(s=>{const b=document.createElement('button');b.textContent=s[0];b.onclick=()=>{S.W=s[1];S.H=s[2];if(s[3])S.bg=s[3];sync();render();};$('sizes').appendChild(b);});
+['cw','ch'].forEach(id=>$(id).addEventListener('change',()=>{S.W=Math.max(100,Math.min(3000,+$('cw').value||S.W));S.H=Math.max(100,Math.min(3000,+$('ch').value||S.H));sync();render();}));
+
+const TABS=['📐 साइज़','📷 फ़ोटो','🎨 रंग','🔤 लेयर','💾 सेव'];
+TABS.forEach((n,i)=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>tab(i);$('tabs').appendChild(b);});
+function tab(i){[...$('tabs').children].forEach((b,j)=>b.classList.toggle('on',i===j));for(let j=0;j<5;j++)$('p'+j).classList.toggle('on',i===j);}
+
+const rd=e=>e.type==='checkbox'?e.checked:(e.type==='range'||e.type==='number')?+e.value:e.value;
+const wr=(e,v)=>{if(e.type==='checkbox')e.checked=!!v;else e.value=v;};
+document.querySelectorAll('[data-s]').forEach(e=>e.addEventListener('input',()=>{S[e.dataset.s]=rd(e);render();}));
+document.querySelectorAll('[data-g]').forEach(e=>e.addEventListener('input',()=>{G[e.dataset.g]=rd(e);preset='';mark();render();}));
+document.querySelectorAll('[data-p]').forEach(e=>e.addEventListener('input',()=>{if(!sel)return;sel[e.dataset.p]=rd(e);if(e.dataset.p==='text')chips();render();}));
+
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>{t.style.display='none';},2600);}
+function hex2rgb(h){h=h.replace('#','');return[parseInt(h.substr(0,2),16),parseInt(h.substr(2,2),16),parseInt(h.substr(4,2),16)];}
+function hexA(h,a){const c=hex2rgb(h);return'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')';}
+function rr(c,x,y,w,h,r){r=Math.min(r,w/2,h/2);c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+
+function newText(){return{type:'text',text:'यहाँ अपना टेक्स्ट लिखिए',font:'Hind',size:Math.round(S.W*0.07),width:85,align:'center',bold:true,italic:false,lh:1.3,bg:false,bgC:'#000000',bgA:55,color:'#ffffff',color2:'#ffd166',grad:false,stroke:'#000000',strokeW:0,shadow:true,shadowC:'#000000',rot:0,opacity:100,x:S.W/2,y:S.H/2};}
+function newShape(){return{type:'shape',shape:'circle',w:30,h:30,fill:true,color:'#ff4fa3',color2:'#8a5cff',grad:true,stroke:'#ffffff',strokeW:0,shadow:false,shadowC:'#000000',rot:0,opacity:100,x:S.W/2,y:S.H/2};}
+
+function fontStr(L,k){return(L.italic?'italic ':'')+(L.bold?'700 ':'400 ')+(L.size*k)+'px "'+L.font+'",sans-serif';}
+function layout(c,L,k){
+  c.font=fontStr(L,k);
+  const maxW=S.W*k*L.width/100,lines=[];
+  String(L.text||'').split('\n').forEach(par=>{
+    let cur='';
+    par.split(' ').forEach(w=>{const t=cur?cur+' '+w:w;if(cur&&c.measureText(t).width>maxW){lines.push(cur);cur=w;}else cur=t;});
+    lines.push(cur);
+  });
+  let w=0;lines.forEach(l=>{w=Math.max(w,c.measureText(l).width);});
+  const lh=L.size*k*L.lh;
+  return{lines:lines,w:Math.max(w,L.size*k*0.5),h:lines.length*lh,lh:lh};
+}
+function box(L){
+  if(L.type==='text'){const m=layout(mc,L,1),p=L.size*0.25;return{hw:m.w/2+p,hh:m.h/2+p};}
+  return{hw:S.W*L.w/200,hh:S.W*L.h/200};
+}
+
+function grade(c,W,H){
+  const g=G;
+  if(!(g.exposure||g.contrast||g.saturation||g.warmth||g.tint||g.fade||g.vignette||g.grain||g.sAmt||g.hAmt))return;
+  const im=c.getImageData(0,0,W,H),d=im.data;
+  const ex=1+g.exposure/100,ct=1+g.contrast/100,sat=1+g.saturation/100,wm=g.warmth*0.4,tn=g.tint*0.35;
+  const fd=g.fade/100*45,fk=1-fd/255;
+  const sc=hex2rgb(g.sCol),hc=hex2rgb(g.hCol),sm=(sc[0]+sc[1]+sc[2])/3,hm=(hc[0]+hc[1]+hc[2])/3;
+  const sa=g.sAmt/100,ha=g.hAmt/100,vg=g.vignette/100,gr=g.grain*0.6;
+  const hx=W/2,hy=H/2;let seed=2463534242;
+  for(let y=0,i=0;y<H;y++){
+    const dy=(y-hy)/hy;
+    for(let x=0;x<W;x++,i+=4){
+      if(d[i+3]===0)continue;
+      let r=d[i]*ex,gg=d[i+1]*ex,b=d[i+2]*ex;
+      r=(r-128)*ct+128;gg=(gg-128)*ct+128;b=(b-128)*ct+128;
+      const lum=0.299*r+0.587*gg+0.114*b;
+      r=lum+(r-lum)*sat;gg=lum+(gg-lum)*sat;b=lum+(b-lum)*sat;
+      r+=wm;b-=wm;gg-=tn;
+      let l=lum/255;l=l<0?0:l>1?1:l;
+      const ws=(1-l)*(1-l)*sa,wh=l*l*ha;
+      r+=(sc[0]-sm)*ws+(hc[0]-hm)*wh;gg+=(sc[1]-sm)*ws+(hc[1]-hm)*wh;b+=(sc[2]-sm)*ws+(hc[2]-hm)*wh;
+      if(fd){r=fd+r*fk;gg=fd+gg*fk;b=fd+b*fk;}
+      if(vg){const dx=(x-hx)/hx;let t=(Math.sqrt(dx*dx+dy*dy)/1.4142-0.35)/0.65;if(t>0){if(t>1)t=1;const v=1-vg*0.85*t*t*(3-2*t);r*=v;gg*=v;b*=v;}}
+      if(gr){seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;const n=((seed>>>0)/4294967296-0.5)*gr;r+=n;gg+=n;b+=n;}
+      d[i]=r;d[i+1]=gg;d[i+2]=b;
+    }
+  }
+  c.putImageData(im,0,0);
+}
+
+function drawText(c,L,k){
+  ensureFont(L);
+  const m=layout(c,L,k),p=L.size*k*0.25;
+  if(L.bg){c.save();c.shadowColor='transparent';c.fillStyle=hexA(L.bgC,L.bgA/100);c.beginPath();rr(c,-m.w/2-p,-m.h/2-p*0.6,m.w+p*2,m.h+p*1.2,p*0.9);c.fill();c.restore();}
+  c.textBaseline='middle';c.textAlign=L.align;
+  const ax=L.align==='center'?0:L.align==='left'?-m.w/2:m.w/2;
+  let fill=L.color;
+  if(L.grad){const gr=c.createLinearGradient(0,-m.h/2,0,m.h/2);gr.addColorStop(0,L.color);gr.addColorStop(1,L.color2);fill=gr;}
+  m.lines.forEach((ln,i)=>{
+    const y=-m.h/2+m.lh*(i+0.5);
+    if(L.strokeW>0){c.lineWidth=L.strokeW*2*k;c.lineJoin='round';c.strokeStyle=L.stroke;c.strokeText(ln,ax,y);}
+    c.fillStyle=fill;c.fillText(ln,ax,y);
+  });
+}
+function drawShape(c,L,k){
+  const w=S.W*k*L.w/100,h=S.W*k*L.h/100;
+  let fill=L.color;
+  if(L.grad){const gr=c.createLinearGradient(-w/2,-h/2,w/2,h/2);gr.addColorStop(0,L.color);gr.addColorStop(1,L.color2);fill=gr;}
+  c.beginPath();
+  if(L.shape==='circle')c.ellipse(0,0,w/2,h/2,0,0,Math.PI*2);
+  else if(L.shape==='round')rr(c,-w/2,-h/2,w,h,Math.min(w,h)*0.25);
+  else c.rect(-w/2,-h/2,w,h);
+  if(L.fill){c.fillStyle=fill;c.fill();}
+  const sw=L.strokeW>0?L.strokeW:(L.fill?0:6);
+  if(sw>0){c.lineWidth=sw*k;c.strokeStyle=L.stroke;c.stroke();}
+}
+function drawLayer(c,L,k){
+  c.save();
+  c.globalAlpha=L.opacity/100;
+  c.translate(L.x*k,L.y*k);
+  c.rotate(L.rot*Math.PI/180);
+  if(L.shadow){const u=(L.type==='text'?L.size:S.W*0.08)*k;c.shadowColor=L.shadowC;c.shadowBlur=u*0.25;c.shadowOffsetY=u*0.05;}
+  if(L.type==='text')drawText(c,L,k);else drawShape(c,L,k);
+  c.restore();
+}
+function drawAll(c,k){
+  const W=Math.round(S.W*k),H=Math.round(S.H*k);
+  if(S.bg==='color'){c.fillStyle=S.bgC;c.fillRect(0,0,W,H);}
+  else if(S.bg==='grad'){const g=c.createLinearGradient(0,0,W*0.6,H);g.addColorStop(0,S.bgC);g.addColorStop(1,S.bgC2);c.fillStyle=g;c.fillRect(0,0,W,H);}
+  if(photo){
+    pc.width=W;pc.height=H;
+    const iw=photo.width,ih=photo.height;
+    const sc=(S.fit==='cover'?Math.max(W/iw,H/ih):Math.min(W/iw,H/ih))*S.zoom;
+    const dw=iw*sc,dh=ih*sc;
+    pcx.imageSmoothingQuality='high';
+    pcx.drawImage(photo,(W-dw)/2+S.px*k,(H-dh)/2+S.py*k,dw,dh);
+    grade(pcx,W,H);
+    c.drawImage(pc,0,0);
+  }
+  layers.forEach(L=>drawLayer(c,L,k));
+}
+
+let rq=false;
+function render(){if(rq)return;rq=true;requestAnimationFrame(()=>{rq=false;paint();});}
+function paint(){
+  S.W=Math.max(100,Math.min(3000,Math.round(S.W)));S.H=Math.max(100,Math.min(3000,Math.round(S.H)));
+  const k=Math.min(1,900/Math.max(S.W,S.H));
+  cv.width=Math.round(S.W*k);cv.height=Math.round(S.H*k);
+  drawAll(cx,k);
+  if(sel){
+    const b=box(sel);
+    cx.save();cx.translate(sel.x*k,sel.y*k);cx.rotate(sel.rot*Math.PI/180);cx.lineWidth=2;
+    cx.setLineDash([8,6]);cx.strokeStyle='#fff';cx.strokeRect(-b.hw*k,-b.hh*k,b.hw*2*k,b.hh*2*k);
+    cx.lineDashOffset=7;cx.strokeStyle='#000';cx.strokeRect(-b.hw*k,-b.hh*k,b.hw*2*k,b.hh*2*k);
+    cx.restore();
+  }
+}
+
+function chips(){
+  const bx=$('layers');bx.innerHTML='';
+  layers.forEach(L=>{
+    const b=document.createElement('button');
+    b.textContent=L.type==='text'?'T '+(L.text||'').replace(/\n/g,' ').slice(0,12):'◼ '+L.shape;
+    if(L===sel)b.className='on';
+    b.onclick=()=>{sel=L;sync();render();};
+    bx.appendChild(b);
+  });
+  if(!layers.length)bx.textContent='अभी कोई लेयर नहीं';
+}
+function sync(){
+  document.querySelectorAll('[data-s]').forEach(e=>wr(e,S[e.dataset.s]));
+  document.querySelectorAll('[data-g]').forEach(e=>wr(e,G[e.dataset.g]));
+  $('cw').value=S.W;$('ch').value=S.H;
+  const t=sel&&sel.type==='text',s=sel&&sel.type==='shape';
+  $('noSel').style.display=sel?'none':'block';
+  $('ctlText').style.display=t?'block':'none';
+  $('ctlShape').style.display=s?'block':'none';
+  $('ctlCommon').style.display=sel?'block':'none';
+  if(sel)document.querySelectorAll('[data-p]').forEach(e=>{const v=sel[e.dataset.p];if(v!==undefined)wr(e,v);});
+  chips();mark();
+}
+
+function pt(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*S.W,y:(e.clientY-r.top)/r.height*S.H};}
+function hit(p){
+  for(let i=layers.length-1;i>=0;i--){
+    const L=layers[i],b=box(L),a=L.rot*Math.PI/180,dx=p.x-L.x,dy=p.y-L.y;
+    const lx=dx*Math.cos(a)+dy*Math.sin(a),ly=-dx*Math.sin(a)+dy*Math.cos(a),m=S.W*0.012;
+    if(Math.abs(lx)<=b.hw+m&&Math.abs(ly)<=b.hh+m)return L;
+  }
+  return null;
+}
+cv.addEventListener('pointerdown',e=>{
+  const p=pt(e),L=hit(p);
+  if(L){sel=L;drag={t:'l',L:L,ox:p.x-L.x,oy:p.y-L.y};}
+  else{sel=null;drag=photo?{t:'p',sx:p.x,sy:p.y,px:S.px,py:S.py}:null;}
+  sync();
+  try{cv.setPointerCapture(e.pointerId);}catch(_){}
+  render();
+});
+cv.addEventListener('pointermove',e=>{
+  if(!drag)return;const p=pt(e);
+  if(drag.t==='l'){drag.L.x=p.x-drag.ox;drag.L.y=p.y-drag.oy;}
+  else{S.px=drag.px+(p.x-drag.sx);S.py=drag.py+(p.y-drag.sy);}
+  render();
+});
+['pointerup','pointercancel'].forEach(n=>cv.addEventListener(n,()=>{drag=null;}));
+
+// ---- फ़ोटो ----
+$('pick').onclick=()=>$('file').click();
+$('file').onchange=()=>{
+  const f=$('file').files[0];if(!f)return;
+  const url=URL.createObjectURL(f),im=new Image();
+  im.onload=()=>{
+    const s=Math.min(1,2400/Math.max(im.naturalWidth,im.naturalHeight));
+    const c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*s);c.height=Math.round(im.naturalHeight*s);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    photo=c;S.px=0;S.py=0;S.zoom=1;URL.revokeObjectURL(url);
+    sync();render();toast('फ़ोटो जुड़ गई ✓ अब "रंग" टैब में लुक चुनिए');
+  };
+  im.onerror=()=>toast('ये फ़ोटो खुल नहीं पाई');
+  im.src=url;$('file').value='';
+};
+$('rmPhoto').onclick=()=>{photo=null;render();};
+$('resetPos').onclick=()=>{S.px=0;S.py=0;S.zoom=1;sync();render();};
+$('fitDoc').onclick=()=>{
+  if(!photo){toast('पहले फ़ोटो चुनिए');return;}
+  const s=Math.min(1,2048/Math.max(photo.width,photo.height));
+  S.W=Math.round(photo.width*s);S.H=Math.round(photo.height*s);S.fit='cover';S.px=0;S.py=0;S.zoom=1;sync();render();
+};
+
+// ---- लेयर ----
+$('addT').onclick=()=>{const L=newText();L.y=S.H*0.4+(layers.length%4)*S.H*0.1;layers.push(L);sel=L;sync();render();tab(3);};
+$('addS').onclick=()=>{const L=newShape();layers.push(L);sel=L;sync();render();tab(3);};
+$('lUp').onclick=()=>{const i=layers.indexOf(sel);if(i>=0&&i<layers.length-1){layers.splice(i,1);layers.splice(i+1,0,sel);sync();render();}};
+$('lDown').onclick=()=>{const i=layers.indexOf(sel);if(i>0){layers.splice(i,1);layers.splice(i-1,0,sel);sync();render();}};
+$('lDup').onclick=()=>{if(!sel)return;const L=Object.assign({},sel,{x:sel.x+S.W*0.03,y:sel.y+S.W*0.03});layers.push(L);sel=L;sync();render();};
+$('lDel').onclick=()=>{const i=layers.indexOf(sel);if(i>=0){layers.splice(i,1);sel=null;sync();render();}};
+$('addLogo').onclick=()=>{
+  if((photo||layers.length)&&!confirm('मौजूदा काम हट जाएगा। आगे बढ़ें?'))return;
+  S.W=1024;S.H=1024;S.bg='transparent';photo=null;
+  const a=newShape();a.w=80;a.h=80;a.x=512;a.y=512;a.shadow=true;
+  const t=newText();t.text='अनु';t.font='Poppins';t.size=380;t.width=90;t.x=512;t.y=512;t.shadow=false;
+  layers=[a,t];sel=t;sync();render();toast('लोगो टेम्पलेट लग गया, अब बदलिए');
+};
+$('addShayari').onclick=()=>{
+  if(layers.length&&!confirm('मौजूदा लेयर हट जाएँगी। आगे बढ़ें?'))return;
+  S.W=1080;S.H=1350;S.bg='grad';S.bgC='#12063a';S.bgC2='#7a2a6b';
+  const t=newText();t.text='यहाँ अपनी शायरी लिखिए\nदूसरी लाइन यहाँ';t.font='Tiro Devanagari Hindi';t.size=84;t.bold=false;t.lh=1.5;t.x=540;t.y=640;t.color='#ffe9b0';
+  const n=newText();n.text='— आपका नाम';n.font='Kalam';n.size=48;n.bold=false;n.x=540;n.y=1100;n.color='#ffffff';n.shadow=false;
+  layers=[t,n];sel=t;sync();render();toast('शायरी टेम्पलेट लग गया, टेक्स्ट बदलिए');
+};
+
+// ---- सेव ----
+function makeFull(jpg){
+  const c=document.createElement('canvas');c.width=S.W;c.height=S.H;drawAll(c.getContext('2d'),1);
+  if(!jpg)return c;
+  const d=document.createElement('canvas');d.width=S.W;d.height=S.H;
+  const x=d.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,S.W,S.H);x.drawImage(c,0,0);return d;
+}
+function blobOf(jpg){return new Promise(res=>makeFull(jpg).toBlob(res,jpg?'image/jpeg':'image/png',0.93));}
+async function save(jpg){
+  toast('बन रहा है...');
+  const b=await blobOf(jpg);
+  if(!b){toast('सेव नहीं हो पाया');return;}
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);
+  a.download=($('fname').value||'anu-design')+(jpg?'.jpg':'.png');
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),15000);
+  toast('सेव हो गया ✓ डाउनलोड्स में देखिए');
+}
+$('sPng').onclick=()=>save(false);
+$('sJpg').onclick=()=>save(true);
+$('sShare').onclick=async()=>{
+  const b=await blobOf(false);if(!b){toast('बन नहीं पाया');return;}
+  const f=new File([b],($('fname').value||'anu-design')+'.png',{type:'image/png'});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});}catch(e){}}
+  else toast('इस ब्राउज़र में शेयर नहीं चलता, PNG सेव कीजिए');
+};
+$('sReset').onclick=()=>{
+  if(!confirm('सब कुछ साफ़ करके नया शुरू करें?'))return;
+  Object.assign(S,S0);G=Object.assign({},G0);preset='';photo=null;layers=[];sel=null;sync();render();
+};
+
+// ---- शुरुआत ----
+const st=newText();st.text='अनु स्टूडियो';layers=[st];
+sync();tab(1);render();
+document.fonts.ready.then(render);
+</script>
+</body>
+</html>
