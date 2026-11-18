@@ -9,50 +9,58 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; }
-  body {
-    margin: 0; color: #fff; display: flex; flex-direction: column; overflow: hidden;
-    height: 100vh; height: 100dvh;
-    font-family: 'Poppins', 'Noto Sans Devanagari', sans-serif;
-    background: linear-gradient(-45deg, #1b0b45, #0a2f5c, #4a0c4a, #07423a);
-    background-size: 400% 400%; animation: bg 20s ease infinite;
-  }
-  @keyframes bg { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-  header { text-align: center; padding: 10px 12px 0; }
-  h1 { margin: 0; font-size: 30px; font-weight: 700; background: linear-gradient(90deg, #ff9ad5, #ffd27a, #8ef0ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  #langBadge { display: inline-block; margin-top: 4px; padding: 3px 12px; font-size: 12px; border-radius: 20px; background: rgba(255,255,255,0.14); }
-  #setup { padding: 16px; }
-  #setup input { display: block; width: 100%; margin: 8px 0; padding: 12px; font-size: 16px; border-radius: 10px; border: none; font-family: inherit; }
-  #setup button { padding: 14px; width: 100%; font-size: 18px; border: none; border-radius: 12px; background: linear-gradient(90deg, #ff4fa3, #8a5cff); color: #fff; font-family: inherit; }
-  #main { display: none; flex: 1; flex-direction: column; min-height: 0; }
-  #orbwrap { display: flex; flex-direction: column; align-items: center; padding-top: 4px; }
-  #orb { width: min(52vw, 230px); height: min(52vw, 230px); }
-  #status { font-size: 14px; opacity: 0.9; margin: 2px 0 4px; min-height: 20px; text-align: center; padding: 0 12px; }
-  #media { display: none; padding: 0 12px 4px; text-align: center; }
-  #vid, #prev { display: none; max-width: 100%; max-height: 20vh; border-radius: 12px; margin: 0 auto; }
-  #chat { flex: 1; overflow-y: auto; padding: 8px 12px; min-height: 60px; }
-  .b { max-width: 86%; padding: 9px 13px; margin: 6px 0; border-radius: 16px; line-height: 1.4; font-size: 15px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); word-wrap: break-word; }
-  .me { margin-left: auto; background: rgba(90,160,255,0.28); border-bottom-right-radius: 4px; }
-  .anu { margin-right: auto; background: rgba(255,170,90,0.26); border-bottom-left-radius: 4px; }
-  .err { color: #ffb3b3; font-size: 13px; margin: 6px 0; }
-  .info { text-align: center; color: #cfd; opacity: 0.75; font-size: 13px; margin: 6px 0; }
-  #ctl { padding: 6px 12px calc(10px + env(safe-area-inset-bottom)); }
-  .row { display: flex; gap: 6px; margin-bottom: 6px; }
-  .row button { flex: 1; padding: 10px 4px; font-size: 14px; border: none; border-radius: 12px; background: rgba(255,255,255,0.16); color: #fff; font-family: inherit; }
-  .row button:disabled { opacity: 0.4; }
-  #live { flex: 3 !important; padding: 15px 8px !important; font-size: 18px !important; font-weight: 600; background: linear-gradient(90deg, #ff4fa3, #8a5cff) !important; }
-  #live.on { background: linear-gradient(90deg, #14b86b, #0aa0c8) !important; }
-  #mute.on { background: #c62828 !important; }
-  #txt { flex: 1; min-width: 0; padding: 11px; font-size: 16px; border: none; border-radius: 12px; font-family: inherit; }
-  #send { flex: 0 0 auto !important; padding: 10px 18px !important; background: #8a5cff !important; }
-  .small button { font-size: 12px !important; background: rgba(0,0,0,0.25) !important; color: #ccc !important; }
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;color:#fff;display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;font-family:'Poppins','Noto Sans Devanagari',sans-serif;background:linear-gradient(-45deg,#1b0b45,#0a2f5c,#4a0c4a,#07423a);background-size:400% 400%;animation:bg 20s ease infinite}
+@keyframes bg{0%{background-position:0 50%}50%{background-position:100% 50%}100%{background-position:0 50%}}
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 4px;position:relative}
+header h1{margin:0;font-size:26px;font-weight:700;background:linear-gradient(90deg,#ff9ad5,#ffd27a,#8ef0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+#gear{display:none;width:38px;height:38px;border:none;border-radius:50%;background:rgba(255,255,255,.15);color:#fff;font-size:20px}
+#menu{display:none;position:absolute;right:12px;top:52px;flex-direction:column;gap:2px;padding:8px;border-radius:14px;background:rgba(20,10,50,.97);z-index:10;min-width:200px}
+#menu button,#menu a{padding:11px 12px;border:none;background:none;color:#fff;font:inherit;font-size:14px;text-align:left;border-radius:10px;text-decoration:none}
+#menu button:active,#menu a:active{background:rgba(255,255,255,.12)}
+#setup{padding:16px}
+#setup input{display:block;width:100%;margin:8px 0;padding:12px;font-size:16px;border-radius:10px;border:none;font-family:inherit}
+#setup button{padding:14px;width:100%;font-size:18px;border:none;border-radius:12px;background:linear-gradient(90deg,#ff4fa3,#8a5cff);color:#fff;font-family:inherit}
+#main{display:none;flex:1;flex-direction:column;min-height:0}
+#chat{flex:1;overflow-y:auto;padding:8px 12px}
+.b{max-width:86%;padding:9px 13px;margin:6px 0;border-radius:16px;line-height:1.45;font-size:15px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);word-wrap:break-word;white-space:pre-wrap}
+.me{margin-left:auto;background:rgba(90,160,255,.28);border-bottom-right-radius:4px}
+.anu{margin-right:auto;background:rgba(255,170,90,.26);border-bottom-left-radius:4px}
+.err{color:#ffb3b3;font-size:13px;margin:6px 0}
+.info{text-align:center;color:#cfd;opacity:.75;font-size:13px;margin:8px 0}
+#liveBar{display:none;align-items:center;gap:8px;margin:0 10px 6px;padding:6px 10px;border-radius:18px;background:rgba(255,255,255,.12)}
+#wave{flex:1;height:34px;min-width:0}
+#liveTxt{font-size:12px;opacity:.85;white-space:nowrap}
+#liveBar button{border:none;border-radius:14px;padding:7px 11px;font:inherit;font-size:13px;color:#fff;background:rgba(255,255,255,.18)}
+#muteB{display:none}
+#muteB.on{background:#c62828}
+#mediaBar{display:none;position:relative;margin:0 10px 6px;text-align:center}
+#vid,#prev{display:none;max-width:100%;max-height:18vh;border-radius:12px;margin:0 3px}
+#mediaBar button{position:absolute;top:4px;width:30px;height:30px;border:none;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:14px}
+#rm{right:4px}
+#flip{display:none;right:40px}
+#bar{display:flex;align-items:center;gap:8px;margin:2px 10px calc(10px + env(safe-area-inset-bottom));padding:6px;border-radius:32px;background:rgba(255,255,255,.14);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);position:relative}
+#plusBtn,#act{flex:0 0 auto;width:42px;height:42px;border:none;border-radius:50%;font-size:20px;color:#fff;background:rgba(255,255,255,.18)}
+#act{background:linear-gradient(135deg,#ff4fa3,#8a5cff)}
+#act.on{background:linear-gradient(135deg,#14b86b,#0aa0c8)}
+#txt{flex:1;min-width:0;border:none;background:transparent;color:#fff;font:inherit;font-size:16px;outline:none;padding:8px 4px}
+#txt::placeholder{color:rgba(255,255,255,.55)}
+#plusMenu{display:none;position:absolute;left:0;bottom:58px;flex-direction:column;gap:2px;padding:8px;border-radius:16px;background:rgba(20,10,50,.97);min-width:190px;z-index:10}
+#plusMenu button{padding:11px 12px;border:none;background:none;color:#fff;font:inherit;font-size:14px;text-align:left;border-radius:10px}
+#plusMenu button:active{background:rgba(255,255,255,.12)}
 </style>
 </head>
 <body>
 <header>
   <h1>अनु</h1>
-  <span id="langBadge">🌐 भाषा अपने आप पहचानूँगी</span>
+  <button id="gear">⋮</button>
+  <div id="menu">
+    <button id="mChup">🤫 चुप कराओ</button>
+    <a href="editor.html">🎨 फ़ोटो स्टूडियो</a>
+    <button id="bhool">🧹 याददाश्त मिटाओ</button>
+    <button id="chabi">🔑 चाबियाँ बदलो</button>
+  </div>
 </header>
 
 <div id="setup">
@@ -64,35 +72,28 @@
 </div>
 
 <div id="main">
-  <div id="orbwrap">
-    <canvas id="orb"></canvas>
-    <div id="status"></div>
+  <div id="chat"></div>
+  <div id="liveBar">
+    <canvas id="wave"></canvas>
+    <span id="liveTxt"></span>
+    <button id="muteB">🎙️</button>
+    <button id="endB">✕ बंद</button>
   </div>
-  <div id="media">
+  <div id="mediaBar">
     <video id="vid" playsinline muted></video>
     <img id="prev" alt="फ़ोटो">
+    <button id="flip">🔄</button>
+    <button id="rm">✕</button>
   </div>
-  <div id="chat"></div>
-  <div id="ctl">
-    <div class="row">
-      <button id="live">🎤 बातचीत शुरू करो</button>
-      <button id="mute" disabled>🔇 म्यूट</button>
-      <button id="chup">🤫 चुप</button>
+  <div id="bar">
+    <div id="plusMenu">
+      <button id="fotoB">📷 फ़ोटो जोड़ो</button>
+      <button id="camB">🎥 कैमरा चालू करो</button>
+      <button id="screenB">🖥️ स्क्रीन चालू करो</button>
     </div>
-    <div class="row">
-      <input id="txt" placeholder="या यहाँ लिखकर पूछिए">
-      <button id="send">भेजो</button>
-    </div>
-    <div class="row">
-      <button id="foto">📷 फ़ोटो</button>
-      <button id="cam">🎥 कैमरा</button>
-      <button id="screen">🖥️ स्क्रीन</button>
-      <button id="flip">🔄 पलटो</button>
-    </div>
-    <div class="row small">
-      <button id="bhool">याददाश्त मिटाओ</button>
-      <button id="chabi">चाबियाँ बदलो</button>
-    </div>
+    <button id="plusBtn">＋</button>
+    <input id="txt" type="text" placeholder="अनु से कुछ भी पूछिए" enterkeyhint="send" autocomplete="off">
+    <button id="act">🎙️</button>
   </div>
   <input type="file" id="file" accept="image/*" style="display:none">
 </div>
@@ -103,15 +104,6 @@ const PASAND = ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "llama-3.1-8b-insta
 const VISION_PASAND = ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b", "meta-llama/llama-4-scout-17b-16e-instruct", "meta-llama/llama-4-maverick-17b-128e-instruct"];
 const NAHI = /whisper|tts|guard|orpheus|compound|embed|safeguard|allam/i;
 const VISION_RE = /vision|scout|maverick|qwen|vl/i;
-const LC = { hindi: "hi-IN", english: "en-IN", tamil: "ta-IN", telugu: "te-IN", bengali: "bn-IN", marathi: "mr-IN", gujarati: "gu-IN", kannada: "kn-IN", malayalam: "ml-IN", punjabi: "pa-IN", urdu: "ur-PK", spanish: "es-ES", french: "fr-FR", german: "de-DE", arabic: "ar-SA", japanese: "ja-JP", korean: "ko-KR", chinese: "zh-CN", russian: "ru-RU", portuguese: "pt-BR", italian: "it-IT", indonesian: "id-ID", turkish: "tr-TR", nepali: "ne-NP", thai: "th-TH", vietnamese: "vi-VN" };
-const STATUS = {
-  idle: "तैयार। नीचे बटन दबाकर बातचीत शुरू कीजिए",
-  listen: "सुन रही हूँ... बोलिए",
-  think: "सोच रही हूँ...",
-  speak: "अनु बोल रही है...",
-  mute: "माइक म्यूट है"
-};
-const HUE = { idle: 215, listen: 150, think: 45, speak: 320, mute: 0 };
 
 const $ = id => document.getElementById(id);
 function saaf(s) { return (s || "").replace(/[^\x21-\x7E]/g, "").replace(/["']/g, ""); }
@@ -120,10 +112,10 @@ let GROQ_KEY = saaf(localStorage.getItem("anu_k1"));
 let ELEVEN_KEY = saaf(localStorage.getItem("anu_k2"));
 let VOICE_ID = saaf(localStorage.getItem("anu_k3"));
 let textModels = [], visionModels = [];
-let liveOn = false, muted = false, working = false, speaking = false, fake = false;
+let liveOn = false, muted = false, working = false, speaking = false, fake = false, barOn = false;
 let micStream = null, inSrc = null, vadTimer = null, rc = null, wl = null, coolUntil = 0;
 let stream = null, isScreen = false, facing = "environment";
-let pendingPhoto = null, curAudio = null, lastLang = "";
+let pendingPhoto = null, curAudio = null;
 let actx = null, inAn = null, outAn = null;
 let noise = 0.01, voiced = 0, lastVoice = 0, recStart = 0;
 
@@ -142,19 +134,26 @@ function getCtx() {
   return actx;
 }
 
+// ---- मेन्यू ----
+$("gear").onclick = e => { e.stopPropagation(); const m = $("menu"); $("plusMenu").style.display = "none"; m.style.display = m.style.display === "flex" ? "none" : "flex"; };
+$("plusBtn").onclick = e => { e.stopPropagation(); const m = $("plusMenu"); $("menu").style.display = "none"; m.style.display = m.style.display === "flex" ? "none" : "flex"; };
+document.addEventListener("click", () => { $("menu").style.display = "none"; $("plusMenu").style.display = "none"; });
+
 // ---- चाबियाँ ----
-const cv = $("orb"), cx = cv.getContext("2d");
-function sizeCv() {
-  const s = cv.clientWidth, d = window.devicePixelRatio || 1;
-  if (!s) return;
-  cv.width = s * d; cv.height = s * d;
-  cx.setTransform(d, 0, 0, d, 0, 0);
+const wv = $("wave"), wx = wv.getContext("2d");
+function sizeWave() {
+  const w = wv.clientWidth, h = wv.clientHeight, d = window.devicePixelRatio || 1;
+  if (!w) return;
+  wv.width = w * d; wv.height = h * d;
+  wx.setTransform(d, 0, 0, d, 0, 0);
 }
-window.addEventListener("resize", sizeCv);
+window.addEventListener("resize", sizeWave);
 
 function dikhao() {
-  if (GROQ_KEY && ELEVEN_KEY && VOICE_ID) { $("setup").style.display = "none"; $("main").style.display = "flex"; sizeCv(); }
-  else { $("setup").style.display = "block"; $("main").style.display = "none"; }
+  const ok = GROQ_KEY && ELEVEN_KEY && VOICE_ID;
+  $("setup").style.display = ok ? "none" : "block";
+  $("main").style.display = ok ? "flex" : "none";
+  $("gear").style.display = ok ? "block" : "none";
 }
 $("save").onclick = () => {
   GROQ_KEY = saaf($("k1").value);
@@ -167,7 +166,7 @@ $("save").onclick = () => {
   dikhao();
 };
 $("chabi").onclick = () => {
-  stopLive(); chup(); stopStream(); mediaDikhao();
+  stopLive(); chup(); stopStream(); pendingPhoto = null; mediaDikhao();
   localStorage.removeItem("anu_k1");
   localStorage.removeItem("anu_k2");
   localStorage.removeItem("anu_k3");
@@ -177,16 +176,15 @@ $("chabi").onclick = () => {
 
 // ---- याददाश्त ----
 let yaadein = JSON.parse(localStorage.getItem("anu_yaadein") || "[]");
-let history = JSON.parse(localStorage.getItem("anu_history") || "[]");
+let hist = JSON.parse(localStorage.getItem("anu_history") || "[]");
 
 function saveSab() {
   localStorage.setItem("anu_yaadein", JSON.stringify(yaadein));
-  localStorage.setItem("anu_history", JSON.stringify(history.slice(-30)));
+  localStorage.setItem("anu_history", JSON.stringify(hist.slice(-30)));
 }
 
 function systemMsg() {
-  let s = "तुम " + NAAM + " हो, शोएब की दोस्त और पर्सनल असिस्टेंट। दोस्त की तरह अपनेपन से बात करो। जवाब छोटे और सीधे रखो, ज़्यादा से ज़्यादा दो वाक्य। शोएब जिस भाषा में बोले या लिखे, तुम उसी भाषा में जवाब दो। हिंदी हो तो देवनागरी में लिखो, अंग्रेज़ी हो तो अंग्रेज़ी में। सच बोलो: तुम सिर्फ़ बातचीत कर सकती हो, बातें याद रख सकती हो, और जब शोएब तस्वीर या कैमरा दिखाए तब उसे देख सकती हो। तुम रिमाइंडर, अलार्म, शेड्यूल, ख़बरें, ट्रैफ़िक, इंटरनेट खोज, कॉल या मैसेज नहीं कर सकती, और ऐसा कर सकने का दावा कभी मत करो। अगर शोएब ऐसा कुछ माँगे तो साफ़ बता दो कि ये अभी मुझसे नहीं होगा।";
-  if (lastLang) s += " शोएब की अभी की भाषा: " + lastLang + "।";
+  let s = "तुम " + NAAM + " हो, शोएब की दोस्त और पर्सनल असिस्टेंट। दोस्त की तरह अपनेपन से बात करो। जवाब छोटे और सीधे रखो, ज़्यादा से ज़्यादा दो वाक्य। हमेशा सिर्फ़ हिंदी में, देवनागरी लिपि में जवाब दो, चाहे शोएब अंग्रेज़ी में ही क्यों न बोले या लिखे। अंग्रेज़ी शब्द ज़रूरी हों तो उन्हें भी देवनागरी में लिखो, जैसे फ़ोन, ऐप, फ़ोटो। सच बोलो: तुम सिर्फ़ बातचीत कर सकती हो, बातें याद रख सकती हो, और जब शोएब तस्वीर या कैमरा दिखाए तब उसे देख सकती हो। तुम रिमाइंडर, अलार्म, शेड्यूल, ख़बरें, ट्रैफ़िक, इंटरनेट खोज, कॉल या मैसेज नहीं कर सकती, और ऐसा कर सकने का दावा कभी मत करो। अगर शोएब ऐसा कुछ माँगे तो साफ़ बता दो कि ये अभी मुझसे नहीं होगा।";
   if (yaadein.length > 0) {
     s += "\n\nशोएब के बारे में तुम्हें ये बातें याद हैं:\n- " + yaadein.join("\n- ");
     s += "\nइन्हें ज़रूरत पड़ने पर स्वाभाविक रूप से इस्तेमाल करो।";
@@ -202,27 +200,23 @@ function add(cls, text) {
   $("chat").scrollTop = $("chat").scrollHeight;
 }
 
-history.forEach(m => {
-  if (m.role === "user") add("me", m.content);
-  else if (m.role === "assistant") add("anu", m.content);
-});
+function shuru() {
+  $("chat").innerHTML = "";
+  hist.forEach(m => {
+    if (m.role === "user") add("me", m.content.replace(/^\(तस्वीर के साथ\) /, ""));
+    else if (m.role === "assistant") add("anu", m.content);
+  });
+  if (!hist.length) add("info", "नमस्ते शोएब! नीचे लिखिए, या माइक दबाकर बात कीजिए।");
+}
 
 $("bhool").onclick = () => {
   if (confirm("अनु की सारी याददाश्त मिटा दूँ?")) {
     localStorage.removeItem("anu_yaadein");
     localStorage.removeItem("anu_history");
-    yaadein = []; history = []; $("chat").innerHTML = "";
+    yaadein = []; hist = [];
+    shuru();
   }
 };
-
-function showLang() {
-  if (lastLang) $("langBadge").textContent = "🌐 " + lastLang.charAt(0).toUpperCase() + lastLang.slice(1);
-}
-function guessLang(t) {
-  if (/[\u0900-\u097F]/.test(t)) lastLang = "hindi";
-  else if (/^[\x00-\x7F\s]+$/.test(t)) lastLang = "english";
-  showLang();
-}
 
 // ---- Groq (सोचना) ----
 async function modelDhundo() {
@@ -278,7 +272,7 @@ async function groq(messages, maxTokens) {
 async function dekho(suna, img) {
   if (!visionModels.length && !textModels.length) await modelDhundo();
   if (!visionModels.length) throw new Error("Groq में तस्वीर समझने वाला कोई मॉडल नहीं मिला।");
-  const sandarbh = history.slice(-6).map(m => (m.role === "user" ? "शोएब: " : "अनु: ") + m.content).join("\n");
+  const sandarbh = hist.slice(-6).map(m => (m.role === "user" ? "शोएब: " : "अनु: ") + m.content).join("\n");
   const prompt = systemMsg().content + "\n\n" + (sandarbh ? "अब तक की बातचीत:\n" + sandarbh + "\n\n" : "") + "शोएब ने ये तस्वीर दिखाकर कहा: " + suna;
   const msgs = [{ role: "user", content: [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: img } }] }];
   return await groqCall(visionModels, msgs, 400, 6);
@@ -297,13 +291,15 @@ async function yaadKaro(suna, jawab) {
   } catch (e) {}
 }
 
-// ---- Groq Whisper (सुनना + भाषा पहचानना) ----
+// ---- Groq Whisper (सुनना, सिर्फ़ हिंदी) ----
 async function transcribe(blob) {
   let lastErr = "";
   for (const m of ["whisper-large-v3-turbo", "whisper-large-v3"]) {
     const fd = new FormData();
     fd.append("file", blob, "audio." + EXT);
     fd.append("model", m);
+    fd.append("language", "hi");
+    fd.append("prompt", "नमस्ते, ये हिंदी में बातचीत है।");
     fd.append("response_format", "verbose_json");
     fd.append("temperature", "0");
     const r = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
@@ -317,8 +313,8 @@ async function transcribe(blob) {
       const text = (j.text || "").trim();
       const segs = j.segments || [];
       const nsp = segs.length ? segs.reduce((a, s) => a + (s.no_speech_prob || 0), 0) / segs.length : 0;
-      if (!text || nsp > 0.6) return { text: "", lang: "" };
-      return { text: text, lang: (j.language || "").toLowerCase() };
+      if (!text || nsp > 0.6 || text.indexOf("हिंदी में बातचीत है") >= 0) return "";
+      return text;
     }
     const msg = (j.error && j.error.message) ? j.error.message : "अनजान गड़बड़";
     lastErr = "Whisper (" + m + ") कोड " + r.status + ": " + msg;
@@ -359,7 +355,7 @@ function browserBolo(text) {
   return new Promise(res => {
     if (!window.speechSynthesis) return res();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = LC[lastLang] || "hi-IN";
+    u.lang = "hi-IN";
     fake = true;
     u.onend = () => { fake = false; res(); };
     u.onerror = () => { fake = false; res(); };
@@ -383,20 +379,20 @@ function chup() {
   if (curAudio) { try { curAudio.pause(); curAudio.dispatchEvent(new Event("ended")); } catch (e) {} }
   if (window.speechSynthesis) speechSynthesis.cancel();
 }
-$("chup").onclick = chup;
+$("mChup").onclick = chup;
 
 // ---- मुख्य सवाल-जवाब ----
-async function core(suna, langName) {
-  if (langName) { lastLang = langName; showLang(); }
+async function core(suna) {
   const img = pendingPhoto || frameLo();
   const usedPhoto = !!pendingPhoto;
   add("me", suna + (img ? "  📷" : ""));
+  uiUpdate();
   let jawab = "";
   try {
     if (img) jawab = await dekho(suna, img);
-    else jawab = await groq([systemMsg()].concat(history.slice(-20), [{ role: "user", content: suna }]), 220);
-    history.push({ role: "user", content: (img ? "(तस्वीर के साथ) " : "") + suna });
-    history.push({ role: "assistant", content: jawab });
+    else jawab = await groq([systemMsg()].concat(hist.slice(-20), [{ role: "user", content: suna }]), 220);
+    hist.push({ role: "user", content: (img ? "(तस्वीर के साथ) " : "") + suna });
+    hist.push({ role: "assistant", content: jawab });
     saveSab();
   } catch (err) {
     add("err", "गड़बड़: " + err.message);
@@ -413,16 +409,21 @@ async function core(suna, langName) {
 function bhejo() {
   const t = $("txt").value.trim();
   if (!t || working) return;
+  chup();
   $("txt").value = "";
   getCtx();
   working = true; uiUpdate();
-  guessLang(t);
-  core(t, "");
+  core(t);
 }
-$("send").onclick = bhejo;
-$("txt").onkeydown = e => { if (e.key === "Enter") bhejo(); };
 
-// ---- लाइव सुनना: आवाज़ पकड़ना ----
+$("txt").oninput = () => uiUpdate();
+$("txt").onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); bhejo(); } };
+$("act").onclick = () => {
+  if ($("txt").value.trim()) { bhejo(); return; }
+  if (liveOn) { stopLive(); chup(); } else startLive();
+};
+
+// ---- लाइव सुनना ----
 function inLevel() {
   if (!inAn) return 0;
   const b = new Uint8Array(inAn.fftSize);
@@ -458,11 +459,11 @@ function finishRec(discard) {
 async function suniHui(blob) {
   if (working || !liveOn) return;
   working = true; uiUpdate();
-  let tr;
-  try { tr = await transcribe(blob); }
+  let text = "";
+  try { text = await transcribe(blob); }
   catch (e) { add("err", "सुनने में गड़बड़: " + e.message); working = false; uiUpdate(); return; }
-  if (!tr.text) { working = false; uiUpdate(); return; }
-  core(tr.text, tr.lang);
+  if (!text) { working = false; uiUpdate(); return; }
+  core(text);
 }
 
 function vadTick() {
@@ -513,89 +514,71 @@ function stopLive() {
   uiUpdate();
 }
 
-$("live").onclick = () => { if (liveOn) { stopLive(); chup(); } else startLive(); };
-$("mute").onclick = () => {
+$("muteB").onclick = () => {
   if (!liveOn || !micStream) return;
   muted = !muted;
   micStream.getAudioTracks().forEach(t => { t.enabled = !muted; });
   if (muted) finishRec(true);
   uiUpdate();
 };
+$("endB").onclick = () => { if (speaking) chup(); else { stopLive(); chup(); } };
 
 function uiUpdate() {
-  $("live").classList.toggle("on", liveOn);
-  $("live").textContent = liveOn ? "⏹ बातचीत बंद करो" : "🎤 बातचीत शुरू करो";
-  $("mute").disabled = !liveOn;
-  $("mute").classList.toggle("on", muted);
-  $("mute").textContent = muted ? "🎙️ अनम्यूट" : "🔇 म्यूट";
+  const has = $("txt").value.trim().length > 0;
+  const want = liveOn || speaking;
+  if (want && !barOn) { $("liveBar").style.display = "flex"; barOn = true; sizeWave(); }
+  else if (!want && barOn) { $("liveBar").style.display = "none"; barOn = false; }
+  $("muteB").style.display = liveOn ? "inline-block" : "none";
+  $("muteB").classList.toggle("on", muted);
+  $("muteB").textContent = muted ? "🔇" : "🎙️";
+  $("endB").textContent = speaking ? "🤫 चुप" : "✕ बंद";
+  $("liveTxt").textContent = speaking ? "बोल रही हूँ" : working ? "सोच रही हूँ" : (liveOn && muted) ? "म्यूट" : "सुन रही हूँ";
+  const a = $("act");
+  a.classList.toggle("on", liveOn && !has);
+  a.textContent = has ? "➤" : (liveOn ? "⏹" : "🎙️");
 }
 
-// ---- गोला और लहरें ----
-function curMode() {
-  if (speaking) return "speak";
-  if (working) return "think";
-  if (liveOn && muted) return "mute";
-  if (liveOn) return "listen";
-  return "idle";
-}
-const N = 48;
-const sm = new Array(N).fill(0);
-let hue = 215, lastMode = "";
-
+// ---- छोटी लहरें ----
+const N = 28, sm = new Array(N).fill(0);
+let hue = 215;
 function frame(t) {
   requestAnimationFrame(frame);
-  const S = cv.clientWidth;
-  if (!S) return;
-  if (cv.width < S) sizeCv();
-  const mode = curMode();
-  if (mode !== lastMode) { lastMode = mode; $("status").textContent = STATUS[mode]; }
+  if (!barOn) return;
+  const W = wv.clientWidth, H = wv.clientHeight;
+  if (!W) return;
+  const mode = speaking ? "speak" : working ? "think" : (liveOn && muted) ? "mute" : "listen";
   let d = null;
   if (mode === "speak" && !fake && outAn) { d = new Uint8Array(outAn.frequencyBinCount); outAn.getByteFrequencyData(d); }
   else if (mode === "listen" && inAn) { d = new Uint8Array(inAn.frequencyBinCount); inAn.getByteFrequencyData(d); }
-  let sum = 0;
+  const target = { speak: 320, think: 45, mute: 0, listen: 150 }[mode];
+  hue += (target - hue) * 0.08;
+  wx.clearRect(0, 0, W, H);
+  const bw = W / N;
+  wx.lineWidth = bw * 0.55; wx.lineCap = "round";
   for (let i = 0; i < N; i++) {
-    const j = i < N / 2 ? i : N - 1 - i;
     let v;
-    if (d) { const k = 2 + Math.floor(j / (N / 2) * 40); v = Math.min(1, Math.pow(d[k] / 255, 0.8) * 1.4); }
+    if (d) { const k = 2 + Math.floor(i / N * 40); v = Math.min(1, Math.pow(d[k] / 255, 0.8) * 1.4); }
     else if (mode === "speak") v = 0.25 + 0.45 * Math.abs(Math.sin(t / 130 + i * 0.9));
-    else if (mode === "think") v = 0.18 + 0.18 * Math.sin(t / 180 + i * 0.7);
-    else if (mode === "mute") v = 0.05;
-    else v = 0.12 + 0.08 * Math.sin(t / 500 + i * 0.5);
+    else if (mode === "think") v = 0.15 + 0.15 * Math.sin(t / 180 + i * 0.7);
+    else v = 0.06;
     sm[i] += (v - sm[i]) * 0.35;
-    sum += sm[i];
+    const h = Math.max(4, sm[i] * H);
+    wx.strokeStyle = "hsl(" + ((hue + i * 3) % 360) + "," + (mode === "mute" ? 25 : 85) + "%," + (mode === "mute" ? 45 : 62) + "%)";
+    wx.beginPath();
+    wx.moveTo(bw * (i + 0.5), H / 2 - h / 2);
+    wx.lineTo(bw * (i + 0.5), H / 2 + h / 2);
+    wx.stroke();
   }
-  const avg = sum / N;
-  hue += (HUE[mode] - hue) * 0.06;
-  cx.clearRect(0, 0, S, S);
-  const c = S / 2, R = S * 0.17 * (0.9 + avg * 0.4);
-  const dim = mode === "mute";
-  for (let i = 0; i < N; i++) {
-    const a = i / N * Math.PI * 2 - Math.PI / 2;
-    const r1 = R + S * 0.03, r2 = r1 + S * 0.02 + sm[i] * S * 0.2;
-    cx.strokeStyle = "hsl(" + ((hue + i * 3) % 360) + "," + (dim ? 30 : 90) + "%," + (dim ? 45 : 62) + "%)";
-    cx.lineWidth = S * 0.018; cx.lineCap = "round";
-    cx.beginPath();
-    cx.moveTo(c + Math.cos(a) * r1, c + Math.sin(a) * r1);
-    cx.lineTo(c + Math.cos(a) * r2, c + Math.sin(a) * r2);
-    cx.stroke();
-  }
-  const g = cx.createRadialGradient(c - R * 0.3, c - R * 0.3, R * 0.1, c, c, R);
-  g.addColorStop(0, "hsl(" + hue + ",95%,75%)");
-  g.addColorStop(1, "hsl(" + ((hue + 50) % 360) + ",90%,45%)");
-  cx.shadowColor = "hsl(" + hue + ",100%,60%)";
-  cx.shadowBlur = S * 0.12;
-  cx.fillStyle = g;
-  cx.beginPath(); cx.arc(c, c, R, 0, Math.PI * 2); cx.fill();
-  cx.shadowBlur = 0;
 }
 
 // ---- फ़ोटो, कैमरा, स्क्रीन ----
 function mediaDikhao() {
-  $("vid").style.display = stream ? "block" : "none";
-  $("prev").style.display = pendingPhoto ? "block" : "none";
-  $("media").style.display = (stream || pendingPhoto) ? "block" : "none";
-  $("cam").textContent = (stream && !isScreen) ? "⏹ कैमरा" : "🎥 कैमरा";
-  $("screen").textContent = (stream && isScreen) ? "⏹ स्क्रीन" : "🖥️ स्क्रीन";
+  $("vid").style.display = stream ? "inline-block" : "none";
+  $("prev").style.display = pendingPhoto ? "inline-block" : "none";
+  $("mediaBar").style.display = (stream || pendingPhoto) ? "block" : "none";
+  $("flip").style.display = (stream && !isScreen) ? "block" : "none";
+  $("camB").textContent = (stream && !isScreen) ? "⏹ कैमरा बंद करो" : "🎥 कैमरा चालू करो";
+  $("screenB").textContent = (stream && isScreen) ? "⏹ स्क्रीन बंद करो" : "🖥️ स्क्रीन चालू करो";
 }
 
 function stopStream() {
@@ -618,7 +601,7 @@ function frameLo() {
 async function startCamera() {
   stopStream();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    add("err", "इस ब्राउज़र में कैमरा नहीं चलता।"); mediaDikhao(); return;
+    add("err", "इस ब्राउज़र में कैमरा नहीं चलता."); mediaDikhao(); return;
   }
   try {
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: false });
@@ -653,15 +636,12 @@ async function startScreen() {
   mediaDikhao();
 }
 
-$("cam").onclick = () => { if (stream && !isScreen) { stopStream(); mediaDikhao(); } else startCamera(); };
-$("screen").onclick = () => { if (stream && isScreen) { stopStream(); mediaDikhao(); } else startScreen(); };
-$("flip").onclick = () => {
-  facing = facing === "environment" ? "user" : "environment";
-  if (stream && !isScreen) startCamera();
-  else add("info", "पहले कैमरा चालू कीजिए।");
-};
+$("camB").onclick = () => { if (stream && !isScreen) { stopStream(); mediaDikhao(); } else startCamera(); };
+$("screenB").onclick = () => { if (stream && isScreen) { stopStream(); mediaDikhao(); } else startScreen(); };
+$("flip").onclick = () => { facing = facing === "environment" ? "user" : "environment"; startCamera(); };
+$("rm").onclick = () => { pendingPhoto = null; stopStream(); mediaDikhao(); };
 
-$("foto").onclick = () => $("file").click();
+$("fotoB").onclick = () => $("file").click();
 $("file").onchange = () => {
   const f = $("file").files[0];
   if (!f) return;
@@ -677,7 +657,7 @@ $("file").onchange = () => {
       pendingPhoto = cc.toDataURL("image/jpeg", 0.8);
       $("prev").src = pendingPhoto;
       mediaDikhao();
-      add("info", "फ़ोटो जुड़ गई। अब बोलकर या लिखकर पूछिए। हटाने के लिए फ़ोटो पर दबाइए।");
+      add("info", "फ़ोटो जुड़ गई। अब बोलकर या लिखकर पूछिए।");
     };
     im.onerror = () => add("err", "ये फ़ोटो खुल नहीं पाई।");
     im.src = fr.result;
@@ -685,9 +665,9 @@ $("file").onchange = () => {
   fr.readAsDataURL(f);
   $("file").value = "";
 };
-$("prev").onclick = () => { pendingPhoto = null; mediaDikhao(); };
 
 dikhao();
+shuru();
 uiUpdate();
 mediaDikhao();
 requestAnimationFrame(frame);
