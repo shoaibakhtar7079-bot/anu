@@ -16,7 +16,7 @@ body{margin:0;color:#fff;display:flex;flex-direction:column;height:100vh;height:
 header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 4px;position:relative}
 header h1{margin:0;font-size:26px;font-weight:700;background:linear-gradient(90deg,#ff9ad5,#ffd27a,#8ef0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
 #gear{display:none;width:38px;height:38px;border:none;border-radius:50%;background:rgba(255,255,255,.15);color:#fff;font-size:20px}
-#menu{display:none;position:absolute;right:12px;top:52px;flex-direction:column;gap:2px;padding:8px;border-radius:14px;background:rgba(20,10,50,.97);z-index:10;min-width:200px}
+#menu{display:none;position:absolute;right:12px;top:52px;flex-direction:column;gap:2px;padding:8px;border-radius:14px;background:rgba(20,10,50,.97);z-index:10;min-width:230px}
 #menu button,#menu a{padding:11px 12px;border:none;background:none;color:#fff;font:inherit;font-size:14px;text-align:left;border-radius:10px;text-decoration:none}
 #menu button:active,#menu a:active{background:rgba(255,255,255,.12)}
 #setup{padding:16px}
@@ -57,6 +57,7 @@ header h1{margin:0;font-size:26px;font-weight:700;background:linear-gradient(90d
   <button id="gear">⋮</button>
   <div id="menu">
     <button id="mChup">🤫 चुप कराओ</button>
+    <button id="mTok">✋ बीच में टोकना: चालू</button>
     <a href="editor.html">🎨 फ़ोटो स्टूडियो</a>
     <button id="bhool">🧹 याददाश्त मिटाओ</button>
     <button id="chabi">🔑 चाबियाँ बदलो</button>
@@ -100,10 +101,12 @@ header h1{margin:0;font-size:26px;font-weight:700;background:linear-gradient(90d
 
 <script>
 const NAAM = "अनु";
-const PASAND = ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "llama-3.1-8b-instant", "llama-3.3-70b-versatile"];
+const PASAND = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
 const VISION_PASAND = ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b", "meta-llama/llama-4-scout-17b-16e-instruct", "meta-llama/llama-4-maverick-17b-128e-instruct"];
 const NAHI = /whisper|tts|guard|orpheus|compound|embed|safeguard|allam/i;
 const VISION_RE = /vision|scout|maverick|qwen|vl/i;
+const BAD_EXACT = ["धन्यवाद", "शुक्रिया", "थैंकयू", "देखनेकेलिएधन्यवाद", "वीडियोदेखनेकेलिएधन्यवाद", "अगलेवीडियोमेंमिलतेहैं", "अगलीबारमिलतेहैं"];
+const BAD_HAS = ["सब्सक्राइब", "सबटाइटल", "सब्टाइटल", "subtitle", "subscribe", "amara"];
 
 const $ = id => document.getElementById(id);
 function saaf(s) { return (s || "").replace(/[^\x21-\x7E]/g, "").replace(/["']/g, ""); }
@@ -112,12 +115,13 @@ let GROQ_KEY = saaf(localStorage.getItem("anu_k1"));
 let ELEVEN_KEY = saaf(localStorage.getItem("anu_k2"));
 let VOICE_ID = saaf(localStorage.getItem("anu_k3"));
 let textModels = [], visionModels = [];
-let liveOn = false, muted = false, working = false, speaking = false, fake = false, barOn = false;
+let liveOn = false, muted = false, working = false, speaking = false, fake = false, barOn = false, barged = false;
+let allowBarge = localStorage.getItem("anu_tok") !== "0";
 let micStream = null, inSrc = null, vadTimer = null, rc = null, wl = null, coolUntil = 0;
 let stream = null, isScreen = false, facing = "environment";
 let pendingPhoto = null, curAudio = null;
 let actx = null, inAn = null, outAn = null;
-let noise = 0.01, voiced = 0, lastVoice = 0, recStart = 0;
+let noise = 0.01, voiced = 0, lastVoice = 0, recStart = 0, loudRun = 0;
 
 const MT = (window.MediaRecorder && ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"].find(t => MediaRecorder.isTypeSupported(t))) || "";
 const EXT = MT.includes("mp4") ? "m4a" : MT.includes("ogg") ? "ogg" : "webm";
@@ -135,6 +139,12 @@ function getCtx() {
 }
 
 // ---- मेन्यू ----
+function tokDikhao() { $("mTok").textContent = "✋ बीच में टोकना: " + (allowBarge ? "चालू" : "बंद"); }
+$("mTok").onclick = () => {
+  allowBarge = !allowBarge;
+  localStorage.setItem("anu_tok", allowBarge ? "1" : "0");
+  tokDikhao();
+};
 $("gear").onclick = e => { e.stopPropagation(); const m = $("menu"); $("plusMenu").style.display = "none"; m.style.display = m.style.display === "flex" ? "none" : "flex"; };
 $("plusBtn").onclick = e => { e.stopPropagation(); const m = $("plusMenu"); $("menu").style.display = "none"; m.style.display = m.style.display === "flex" ? "none" : "flex"; };
 document.addEventListener("click", () => { $("menu").style.display = "none"; $("plusMenu").style.display = "none"; });
@@ -184,7 +194,13 @@ function saveSab() {
 }
 
 function systemMsg() {
-  let s = "तुम " + NAAM + " हो, शोएब की दोस्त और पर्सनल असिस्टेंट। दोस्त की तरह अपनेपन से बात करो। जवाब छोटे और सीधे रखो, ज़्यादा से ज़्यादा दो वाक्य। हमेशा सिर्फ़ हिंदी में, देवनागरी लिपि में जवाब दो, चाहे शोएब अंग्रेज़ी में ही क्यों न बोले या लिखे। अंग्रेज़ी शब्द ज़रूरी हों तो उन्हें भी देवनागरी में लिखो, जैसे फ़ोन, ऐप, फ़ोटो। सच बोलो: तुम सिर्फ़ बातचीत कर सकती हो, बातें याद रख सकती हो, और जब शोएब तस्वीर या कैमरा दिखाए तब उसे देख सकती हो। तुम रिमाइंडर, अलार्म, शेड्यूल, ख़बरें, ट्रैफ़िक, इंटरनेट खोज, कॉल या मैसेज नहीं कर सकती, और ऐसा कर सकने का दावा कभी मत करो। अगर शोएब ऐसा कुछ माँगे तो साफ़ बता दो कि ये अभी मुझसे नहीं होगा।";
+  let s = "तुम " + NAAM + " हो, शोएब की दोस्त और पर्सनल असिस्टेंट। दोस्त की तरह अपनेपन से बात करो। जवाब छोटे और सीधे रखो, ज़्यादा से ज़्यादा दो वाक्य। "
+    + "हमेशा सिर्फ़ हिंदी में, देवनागरी लिपि में जवाब दो, चाहे शोएब अंग्रेज़ी में ही क्यों न बोले या लिखे। अंग्रेज़ी शब्द ज़रूरी हों तो उन्हें भी देवनागरी में लिखो, जैसे फ़ोन, ऐप, फ़ोटो। "
+    + "सिर्फ़ तब अंग्रेज़ी में लिखो जब शोएब साफ़ कहे कि किसी बात का अंग्रेज़ी अनुवाद चाहिए, और तब सिर्फ़ वही अनुवाद अंग्रेज़ी में दो। "
+    + "सच बोलना सबसे ज़रूरी है। नाम, तारीख़, आँकड़े, लोग, किताबें, जगहें या किसी भी तथ्य की पक्की जानकारी न हो तो कभी अंदाज़े से या गढ़कर मत बताओ। साफ़ कहो कि मुझे इसकी पक्की जानकारी नहीं है। "
+    + "अगर शोएब की बात बेतुकी लगे या साफ़ समझ न आए, तो उसका अंदाज़ा मत लगाओ, विनम्रता से दोबारा पूछ लो। "
+    + "तुम बातचीत कर सकती हो, सवालों के जवाब दे सकती हो, लिखने, अनुवाद और कोडिंग में सलाह दे सकती हो, बातें याद रख सकती हो, और जब शोएब तस्वीर या कैमरा दिखाए तब उसे देख सकती हो। "
+    + "तुम रिमाइंडर, अलार्म, शेड्यूल, ख़बरें, ट्रैफ़िक, इंटरनेट खोज, कॉल या मैसेज नहीं कर सकती, और ऐसा कर सकने का दावा कभी मत करो। अगर शोएब ऐसा कुछ माँगे तो साफ़ बता दो कि ये अभी मुझसे नहीं होगा।";
   if (yaadein.length > 0) {
     s += "\n\nशोएब के बारे में तुम्हें ये बातें याद हैं:\n- " + yaadein.join("\n- ");
     s += "\nइन्हें ज़रूरत पड़ने पर स्वाभाविक रूप से इस्तेमाल करो।";
@@ -235,11 +251,11 @@ async function modelDhundo() {
   if (!textModels.length) throw new Error("Groq में कोई चालू मॉडल नहीं मिला।");
 }
 
-async function groqCall(list, messages, maxTokens, tries) {
+async function groqCall(list, messages, maxTokens, tries, temp) {
   let lastErr = "";
   for (const m of list.slice(0, tries)) {
     const gptoss = m.startsWith("openai/gpt-oss");
-    const body = { model: m, messages: messages, max_tokens: gptoss ? maxTokens + 400 : maxTokens };
+    const body = { model: m, messages: messages, max_tokens: gptoss ? maxTokens + 400 : maxTokens, temperature: temp };
     if (gptoss) body.reasoning_effort = "low";
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -264,9 +280,9 @@ async function groqCall(list, messages, maxTokens, tries) {
   throw new Error(lastErr || "कोई मॉडल नहीं चला");
 }
 
-async function groq(messages, maxTokens) {
+async function groq(messages, maxTokens, temp) {
   if (!textModels.length) await modelDhundo();
-  return await groqCall(textModels, messages, maxTokens, 5);
+  return await groqCall(textModels, messages, maxTokens, 5, temp === undefined ? 0.4 : temp);
 }
 
 async function dekho(suna, img) {
@@ -275,13 +291,14 @@ async function dekho(suna, img) {
   const sandarbh = hist.slice(-6).map(m => (m.role === "user" ? "शोएब: " : "अनु: ") + m.content).join("\n");
   const prompt = systemMsg().content + "\n\n" + (sandarbh ? "अब तक की बातचीत:\n" + sandarbh + "\n\n" : "") + "शोएब ने ये तस्वीर दिखाकर कहा: " + suna;
   const msgs = [{ role: "user", content: [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: img } }] }];
-  return await groqCall(visionModels, msgs, 400, 6);
+  return await groqCall(visionModels, msgs, 400, 6, 0.4);
 }
 
 async function yaadKaro(suna, jawab) {
+  if (suna.length < 8) return;
   try {
-    const p = "नीचे शोएब और अनु की बातचीत है। अगर शोएब ने अपने बारे में कोई नई ख़ास बात बताई है, जैसे नाम, पसंद, नापसंद, दोस्त, परिवार, काम, योजना या आदत, तो उसे एक छोटे हिंदी वाक्य में लिखो। एक से ज़्यादा हों तो हर एक नई लाइन में। अगर कुछ भी नया नहीं है, तो सिर्फ़ NONE लिखो।\n\nशोएब: " + suna + "\nअनु: " + jawab;
-    const out = await groq([{ role: "user", content: p }], 100);
+    const p = "नीचे शोएब और अनु की बातचीत है। अगर शोएब ने अपने बारे में कोई नई ख़ास बात साफ़ शब्दों में ख़ुद बताई है, जैसे नाम, पसंद, नापसंद, दोस्त, परिवार, काम, योजना या आदत, तो उसे एक छोटे हिंदी वाक्य में लिखो। सिर्फ़ वही लिखो जो शोएब ने ख़ुद कहा, अंदाज़ा या अपनी तरफ़ से कुछ मत जोड़ो। एक से ज़्यादा हों तो हर एक नई लाइन में। अगर कुछ भी नया नहीं है, तो सिर्फ़ NONE लिखो।\n\nशोएब: " + suna + "\nअनु: " + jawab;
+    const out = await groq([{ role: "user", content: p }], 100, 0.2);
     if (out.trim().toUpperCase().startsWith("NONE")) return;
     out.split("\n").map(x => x.replace(/^[-•\s]+/, "").trim()).filter(x => x.length > 3).forEach(x => {
       if (!yaadein.includes(x)) yaadein.push(x);
@@ -291,7 +308,23 @@ async function yaadKaro(suna, jawab) {
   } catch (e) {}
 }
 
-// ---- Groq Whisper (सुनना, सिर्फ़ हिंदी) ----
+// ---- Groq Whisper (सुनना, सिर्फ़ हिंदी, बेतुके शब्द छाँटकर) ----
+function norm(s) { return (s || "").replace(/[।.,!?\s]/g, ""); }
+
+function saafText(t) {
+  t = (t || "").trim();
+  if (!t) return "";
+  const dev = (t.match(/[\u0900-\u097F]/g) || []).length;
+  const lat = (t.match(/[A-Za-z]/g) || []).length;
+  if (dev < 2 || lat > dev) return "";
+  if (BAD_EXACT.indexOf(norm(t)) >= 0) return "";
+  const low = t.toLowerCase();
+  if (BAD_HAS.some(b => low.indexOf(b) >= 0)) return "";
+  const w = t.split(/\s+/);
+  if (w.length >= 6 && new Set(w).size <= 2) return "";
+  return t;
+}
+
 async function transcribe(blob) {
   let lastErr = "";
   for (const m of ["whisper-large-v3-turbo", "whisper-large-v3"]) {
@@ -299,7 +332,6 @@ async function transcribe(blob) {
     fd.append("file", blob, "audio." + EXT);
     fd.append("model", m);
     fd.append("language", "hi");
-    fd.append("prompt", "नमस्ते, ये हिंदी में बातचीत है।");
     fd.append("response_format", "verbose_json");
     fd.append("temperature", "0");
     const r = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
@@ -310,11 +342,14 @@ async function transcribe(blob) {
     let j = {};
     try { j = await r.json(); } catch (e) {}
     if (r.ok) {
-      const text = (j.text || "").trim();
       const segs = j.segments || [];
-      const nsp = segs.length ? segs.reduce((a, s) => a + (s.no_speech_prob || 0), 0) / segs.length : 0;
-      if (!text || nsp > 0.6 || text.indexOf("हिंदी में बातचीत है") >= 0) return "";
-      return text;
+      if (segs.length) {
+        const nsp = segs.reduce((a, s) => a + (s.no_speech_prob || 0), 0) / segs.length;
+        const alp = segs.reduce((a, s) => a + (s.avg_logprob || 0), 0) / segs.length;
+        const cr = Math.max.apply(null, segs.map(s => s.compression_ratio || 0));
+        if (nsp > 0.5 || alp < -1.0 || cr > 2.4) return "";
+      }
+      return saafText((j.text || "").trim());
     }
     const msg = (j.error && j.error.message) ? j.error.message : "अनजान गड़बड़";
     lastErr = "Whisper (" + m + ") कोड " + r.status + ": " + msg;
@@ -338,7 +373,9 @@ async function elevenBolo(text) {
     } catch (e) {}
     throw new Error("ElevenLabs कोड " + r.status + ": " + t);
   }
-  const url = URL.createObjectURL(await r.blob());
+  const blob = await r.blob();
+  if (barged) return;
+  const url = URL.createObjectURL(blob);
   const c = getCtx();
   if (c.state === "suspended") { try { await c.resume(); } catch (e) {} }
   await new Promise((res, rej) => {
@@ -364,14 +401,16 @@ function browserBolo(text) {
 }
 
 async function bolo(text) {
-  speaking = true; uiUpdate();
+  speaking = true; barged = false; loudRun = 0; uiUpdate();
   try { await elevenBolo(text); }
   catch (err) {
-    add("err", "आवाज़ में गड़बड़: " + err.message + " (अभी फ़ोन की अपनी आवाज़ से बोल रही हूँ)");
-    await browserBolo(text);
+    if (!barged) {
+      add("err", "आवाज़ में गड़बड़: " + err.message + " (अभी फ़ोन की अपनी आवाज़ से बोल रही हूँ)");
+      await browserBolo(text);
+    }
   }
   speaking = false;
-  coolUntil = performance.now() + 800;
+  coolUntil = barged ? 0 : performance.now() + 800;
   uiUpdate();
 }
 
@@ -390,7 +429,7 @@ async function core(suna) {
   let jawab = "";
   try {
     if (img) jawab = await dekho(suna, img);
-    else jawab = await groq([systemMsg()].concat(hist.slice(-20), [{ role: "user", content: suna }]), 220);
+    else jawab = await groq([systemMsg()].concat(hist.slice(-20), [{ role: "user", content: suna }]), 220, 0.4);
     hist.push({ role: "user", content: (img ? "(तस्वीर के साथ) " : "") + suna });
     hist.push({ role: "assistant", content: jawab });
     saveSab();
@@ -423,7 +462,7 @@ $("act").onclick = () => {
   if (liveOn) { stopLive(); chup(); } else startLive();
 };
 
-// ---- लाइव सुनना ----
+// ---- लाइव सुनना और बीच में टोकना ----
 function inLevel() {
   if (!inAn) return 0;
   const b = new Uint8Array(inAn.fftSize);
@@ -446,11 +485,11 @@ function finishRec(discard) {
   const r = rc;
   rc = null;
   if (!r) return;
-  const keep = !discard && voiced >= 5;
+  const keep = !discard && voiced >= 8;
   r.onstop = () => {
     if (!keep) return;
     const blob = new Blob(r.arr, { type: MT || "audio/webm" });
-    if (blob.size < 2000) return;
+    if (blob.size < 3000) return;
     suniHui(blob);
   };
   try { r.stop(); } catch (e) {}
@@ -468,19 +507,28 @@ async function suniHui(blob) {
 
 function vadTick() {
   const now = performance.now();
-  if (!liveOn || muted || working || speaking || now < coolUntil) {
+  if (!liveOn || muted) { if (rc) finishRec(true); loudRun = 0; return; }
+  const lvl = inLevel();
+
+  if (speaking) {
     if (rc) finishRec(true);
+    if (!allowBarge) { loudRun = 0; return; }
+    const th = Math.max(0.07, noise * 5);
+    loudRun = lvl > th ? loudRun + 1 : 0;
+    if (loudRun >= 6) { loudRun = 0; barged = true; chup(); }
     return;
   }
-  const lvl = inLevel();
+
+  if (working || now < coolUntil) { if (rc) finishRec(true); loudRun = 0; return; }
+
   if (!rc) noise = noise * 0.98 + Math.min(lvl, 0.05) * 0.02;
-  const th = Math.max(0.02, noise * 2.5);
+  const th = Math.max(0.025, noise * 3);
   if (lvl > th) {
     lastVoice = now;
     if (!rc) startRec();
     voiced++;
   }
-  if (rc && now - lastVoice > 1200) finishRec(false);
+  if (rc && now - lastVoice > 1100) finishRec(false);
   else if (rc && now - recStart > 25000) finishRec(false);
 }
 
@@ -498,7 +546,7 @@ async function startLive() {
   const c = getCtx();
   inSrc = c.createMediaStreamSource(micStream);
   inSrc.connect(inAn);
-  liveOn = true; muted = false; noise = 0.01;
+  liveOn = true; muted = false; noise = 0.01; loudRun = 0;
   try { if (navigator.wakeLock) wl = await navigator.wakeLock.request("screen"); } catch (e) {}
   vadTimer = setInterval(vadTick, 50);
   uiUpdate();
@@ -601,7 +649,7 @@ function frameLo() {
 async function startCamera() {
   stopStream();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    add("err", "इस ब्राउज़र में कैमरा नहीं चलता."); mediaDikhao(); return;
+    add("err", "इस ब्राउज़र में कैमरा नहीं चलता।"); mediaDikhao(); return;
   }
   try {
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: false });
@@ -666,6 +714,7 @@ $("file").onchange = () => {
   $("file").value = "";
 };
 
+tokDikhao();
 dikhao();
 shuru();
 uiUpdate();
